@@ -55,7 +55,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initialize()
-
         setContent {
             globalState = rememberScrollState()
             fixedColumnWidth = 128
@@ -147,19 +146,15 @@ class MainActivity : ComponentActivity() {
         scrollState: ScrollState,
     ): SnapLayoutInfoProvider = object : SnapLayoutInfoProvider {
         override fun Density.calculateApproachOffset(initialVelocity: Float): Float = 0f
-
-        override fun Density.calculateSnappingOffsetBounds(): ClosedFloatingPointRange<Float> {
-            val bound0 = -scrollState.value % snapStepSize()
-            val bound1 = snapStepSize() + bound0
-
-            return (if (bound0 >= 0 && bound1 < 0) bound1.rangeTo(bound0) else bound0.rangeTo(bound1))
+        override fun Density.calculateSnapStepSize(): Float {
+            return scrollState.maxValue.toFloat() / (itemCount - 1)
         }
 
-        override fun Density.snapStepSize(): Float {
-            Log.i("Rupayan", "snapStepSize scrollState.maxValue :"+scrollState.maxValue.toFloat() +" itemCount :"+ itemCount)
-            Log.i("Rupayan", "snapStepSize calculated :"+scrollState.maxValue.toFloat() / (itemCount - 1))
-            Log.i("Rupayan", "snapStepSize fixed :"+maxProgramCellWidth.toFloat())
-            return scrollState.maxValue.toFloat() / (itemCount - 1)
+        override fun Density.calculateSnappingOffsetBounds(): ClosedFloatingPointRange<Float> {
+            val bound0 = -scrollState.value % calculateSnapStepSize()
+            val bound1 = calculateSnapStepSize() + bound0
+
+            return (if (bound0 >= 0 && bound1 < 0) bound1.rangeTo(bound0) else bound0.rangeTo(bound1))
         }
     }
 
