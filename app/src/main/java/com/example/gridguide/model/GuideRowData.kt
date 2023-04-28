@@ -1,4 +1,6 @@
-package com.example.gridguide
+package com.example.gridguide.model
+
+import com.example.gridguide.model.GuideCellData
 
 data class GuideRowData (
 

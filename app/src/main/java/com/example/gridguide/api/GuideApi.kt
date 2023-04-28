@@ -1,5 +1,6 @@
-package com.example.gridguide
+package com.example.gridguide.api
 
+import com.example.gridguide.model.GuideRow
 import com.skydoves.sandwich.ApiResponse
 import retrofit2.http.GET
 import retrofit2.http.Header

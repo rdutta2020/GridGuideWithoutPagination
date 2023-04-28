@@ -1,4 +1,4 @@
-package com.example.gridguide
+package com.example.gridguide.model
 
 data class ApiError(
     // httpStatusCode -> Is actually the responseCode we need to set

@@ -1,12 +1,13 @@
-package com.example.gridguide
+package com.example.gridguide.repository
 
+import com.example.gridguide.model.ApiError
+import com.example.gridguide.model.ApiResult
+import com.example.gridguide.model.ErrorType
+import com.example.gridguide.model.ServiceErrorCode
 import com.skydoves.sandwich.ApiResponse
-import com.skydoves.sandwich.getOrNull
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.withContext
-import retrofit2.Response
-import javax.inject.Inject
 
 open class BaseRepository(private val dispatcher: CoroutineDispatcher) {
 

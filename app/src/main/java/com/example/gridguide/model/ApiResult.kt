@@ -1,4 +1,4 @@
-package com.example.gridguide
+package com.example.gridguide.model
 
 sealed class ApiResult<out T>(
     val data: T? = null,

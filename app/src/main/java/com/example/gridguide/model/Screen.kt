@@ -1,4 +1,4 @@
-package com.example.gridguide
+package com.example.gridguide.model
 
 data class Screen(
     /**

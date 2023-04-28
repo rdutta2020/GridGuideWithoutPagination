@@ -1,4 +1,8 @@
-package com.example.gridguide
+package com.example.gridguide.repository
+
+import com.example.gridguide.model.ApiResult
+import com.example.gridguide.utils.FeatureArea
+import com.example.gridguide.model.GuideRowData
 
 interface GuideRepository {
 

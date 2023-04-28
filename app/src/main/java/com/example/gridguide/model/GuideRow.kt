@@ -1,5 +1,6 @@
-package com.example.gridguide
+package com.example.gridguide.model
 
+import com.example.gridguide.model.GuideCell
 import com.squareup.moshi.Json
 
 data class GuideRow (

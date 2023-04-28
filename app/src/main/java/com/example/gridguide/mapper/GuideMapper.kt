@@ -1,4 +1,11 @@
-package com.example.gridguide
+package com.example.gridguide.mapper
+
+import com.example.gridguide.model.ContentType
+import com.example.gridguide.model.GuideCell
+import com.example.gridguide.model.GuideCellContentType
+import com.example.gridguide.model.GuideCellData
+import com.example.gridguide.model.GuideRow
+import com.example.gridguide.model.GuideRowData
 
 object GuideMapper {
 

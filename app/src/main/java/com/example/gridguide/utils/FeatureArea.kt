@@ -1,5 +1,6 @@
-package com.example.gridguide
+package com.example.gridguide.utils
 
+import com.example.gridguide.model.Screen
 import java.io.Serializable
 
 data class FeatureArea(

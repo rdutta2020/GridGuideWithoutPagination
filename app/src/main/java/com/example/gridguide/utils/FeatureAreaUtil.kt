@@ -1,6 +1,8 @@
-package com.example.gridguide
+package com.example.gridguide.utils
 
 import android.content.Context
+import com.example.gridguide.R
+import com.example.gridguide.model.Screen
 
 fun FeatureArea.format(context: Context): String {
     return when (screens.size) {
