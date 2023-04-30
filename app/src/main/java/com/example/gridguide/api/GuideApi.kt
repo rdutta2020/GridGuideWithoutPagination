@@ -1,7 +1,7 @@
 package com.example.gridguide.api
 
 import com.example.gridguide.model.GuideRow
-import com.skydoves.sandwich.ApiResponse
+import retrofit2.Call
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Query
@@ -9,5 +9,21 @@ import retrofit2.http.Query
 interface GuideApi {
 
     @GET("v1/guideRows")
-    suspend fun guideRowsGet(@Header("ApplicationFeatureArea") featureArea: String, @Query("msoPartnerId") msoPartnerId: String, @Query("stationId") stationId: String, @Query("windowStartTime") windowStartTime: Long, @Query("windowEndTime") windowEndTime: Long): ApiResponse<List<GuideRow>>
+    fun guideRowsGet(
+        @Header("ApplicationFeatureArea") featureArea: String,
+        @Header("ApplicationVersion") applicationVersion: String,
+        @Header("DeviceType") deviceType: String,
+        @Header("Origin-RequestId") requestId: Int,
+        @Header("Accept-Language") language: String,
+        @Header("ProductName") productName: String,
+        @Header("x-amzn-requestid") amznRequestId: String,
+        @Header("ApplicationName") applicationName: String,
+        @Header("BodyId") bodyId : String,
+        @Header("Accept-Encoding") encoding :String,
+        @Header("user-agent")userAgent :String,
+        @Query("msoPartnerId") msoPartnerId: String,
+        @Query("stationId") stationId: String,
+        @Query("windowStartTime") windowStartTime: Long,
+        @Query("windowEndTime") windowEndTime: Long
+    ): Call<List<GuideRow>>
 }

@@ -2,7 +2,6 @@ package com.example.gridguide
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.animateContentSize
@@ -111,7 +110,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun DrawGrid(scrollState: LazyListState) {
         LazyColumn(
-             // state = scrollState
+            // state = scrollState
         ) {
             items(channelProgramData) { rowdata ->
                 DrawGridRowItem(item = rowdata)
@@ -164,7 +163,7 @@ class MainActivity : ComponentActivity() {
         height: Int
     ) {
         var fraction = 1F
-        if(cellData.duration != 30){
+        if (cellData.duration != 30) {
             fraction = (cellData.duration).toFloat() / 30F
         }
         Box(
@@ -273,9 +272,9 @@ class MainActivity : ComponentActivity() {
             val name = "C$row"
             val programList: ArrayList<CellItemData> = ArrayList()
             for (col in 1..maxColumns) {
-                if(row %4 == 0 && col % 2 != 0){
+                if (row % 4 == 0 && col % 2 != 0) {
                     programList.add(CellItemData(String.format("P-%d-%d", row, col), 15))
-                }else{
+                } else {
                     programList.add(CellItemData(String.format("P-%d-%d", row, col), 30))
                 }
             }
