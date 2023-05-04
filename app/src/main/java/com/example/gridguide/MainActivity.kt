@@ -12,6 +12,11 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.ScrollableState
+import androidx.compose.foundation.gestures.rememberScrollableState
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -34,19 +39,29 @@ import com.example.gridguide.ui.theme.GridGuideTheme
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 
     lateinit var globalState: ScrollState
+
+    lateinit var scrollState: ScrollableState
     var fixedColumnWidth: Int = 0
     var maxProgramCellWidth: Int = 0
 
-    val maxRows = 15
-    val maxColumns = 12 //672
+    val maxRows = 400
+    val maxColumns = 672
     val rowHeight = 60
 
-    @SuppressLint(
+   // @Volatile
+    lateinit var stateRowX : LazyListState
+    //@Volatile
+    lateinit var stateRowY : LazyListState
+
+    val stateYList = ArrayList<LazyListState>()
+
+        @SuppressLint(
         "UnusedMaterial3ScaffoldPaddingParameter",
         "UnusedMaterialScaffoldPaddingParameter"
     )
@@ -54,6 +69,25 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         initialize()
         setContent {
+            stateRowX = rememberLazyListState() // State for the first Row, X
+            stateRowY = rememberLazyListState() // State for the second Row, Y
+
+            val scope = rememberCoroutineScope()
+            scrollState = rememberScrollableState { delta ->
+                Log.i("Rupayan", "scrollState changed by $delta")
+                scope.launch {
+                    //Log.i("Rupayan","Before stateRowX ${stateRowX.firstVisibleItemIndex} stateRowY ${stateRowY.firstVisibleItemIndex}")
+                    stateRowX.scrollBy(-delta)
+
+                    stateRowY.scrollBy(-delta)
+                   // Log.i("Rupayan","After stateRowX scrollBy ${stateRowX.scrollBy(-delta)} stateRowY scrollBy ${stateRowY.scrollBy(-delta)}")
+                  /* for(state in stateYList) {
+                        state.scrollBy(-delta)
+                    }*/
+                }
+                delta
+            }
+
             globalState = rememberScrollState()
             fixedColumnWidth = 128
             maxProgramCellWidth = LocalConfiguration.current.screenWidthDp - fixedColumnWidth
@@ -71,6 +105,24 @@ class MainActivity : ComponentActivity() {
                     }
                 )
             }
+
+          /*  LaunchedEffect(stateRowX.firstVisibleItemScrollOffset) {
+                if (!stateRowY.isScrollInProgress) {
+                    stateRowY.scrollToItem(
+                        stateRowX.firstVisibleItemIndex,
+                        stateRowX.firstVisibleItemScrollOffset
+                    )
+                }
+            }
+
+            LaunchedEffect(stateRowY.firstVisibleItemScrollOffset) {
+                if (!stateRowX.isScrollInProgress) {
+                    stateRowX.scrollToItem(
+                        stateRowY.firstVisibleItemIndex,
+                        stateRowY.firstVisibleItemScrollOffset
+                    )
+                }
+            }*/
         }
     }
 
@@ -108,6 +160,7 @@ class MainActivity : ComponentActivity() {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .scrollable(scrollState, Orientation.Vertical)
             ) {
                 ChannelHeaderWithList()
                 ProgramList()
@@ -120,20 +173,28 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun ProgramList(modifier: Modifier = Modifier) {
         val pagerState = rememberPagerState()
-
+       /* var stateY = rememberLazyListState()
+        if(stateYList.size > 1){
+            stateY = stateYList[stateYList.size-1]
+        }
+        stateYList.add(stateY)*/
         Column(
             modifier = modifier
                 .fillMaxWidth()
         ) {
             HorizontalPager(
-                count = 672,
-                state = pagerState,
+                count = maxColumns,// INT MAX should be
+               // state = pagerState,
                 modifier = Modifier.weight(1f)
             ) { currentPage ->
+                Log.i("Rupayan", "Drawing pager for page : "+currentPage)
                 Column {
                     ItemCell(rowHeight, "T ${currentPage + 1}")
-                    LazyColumn{
+                    LazyColumn(state = stateRowY,
+                        userScrollEnabled = false){
+                        //Log.i("Rupayan", "LazyColumn of program redrawing")
                         itemsIndexed(channelProgramData) { index, item ->
+                            Log.i("Rupayan", "LazyColumn of program drawing row $index")
                             ItemCell(rowHeight, "P - ${index + 1} - ${currentPage + 1}")
                         }
                     }
@@ -155,9 +216,12 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun ChannelList() {
-        LazyColumn() {
+        LazyColumn(state = stateRowX,
+            userScrollEnabled = false) {
+            Log.i("Rupayan", "LazyColumn of channel redrawing")
             items(channelProgramData.size) { index ->
-                Log.d("TAG","DrawaingRowNumber==$index")
+               // Log.d("TAG","DrawaingRowNumber==$index")
+                Log.i("Rupayan", "LazyColumn of channel drawing row $index")
                 ItemCell(rowHeight, channelProgramData[index].name)
             }
         }
