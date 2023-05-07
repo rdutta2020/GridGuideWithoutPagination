@@ -23,7 +23,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,8 +43,6 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 
-    lateinit var globalState: ScrollState
-
     lateinit var scrollState: ScrollableState
     var fixedColumnWidth: Int = 0
     var maxProgramCellWidth: Int = 0
@@ -54,14 +51,13 @@ class MainActivity : ComponentActivity() {
     val maxColumns = 672
     val rowHeight = 60
 
-   // @Volatile
-    lateinit var stateRowX : LazyListState
+    // @Volatile
+    lateinit var stateRowX: LazyListState
+
     //@Volatile
-    lateinit var stateRowY : LazyListState
+    lateinit var stateRowY: LazyListState
 
-    val stateYList = ArrayList<LazyListState>()
-
-        @SuppressLint(
+    @SuppressLint(
         "UnusedMaterial3ScaffoldPaddingParameter",
         "UnusedMaterialScaffoldPaddingParameter"
     )
@@ -78,17 +74,35 @@ class MainActivity : ComponentActivity() {
                 scope.launch {
                     //Log.i("Rupayan","Before stateRowX ${stateRowX.firstVisibleItemIndex} stateRowY ${stateRowY.firstVisibleItemIndex}")
                     stateRowX.scrollBy(-delta)
-
+                    /* Below line does not work from 2nd page onwards, so added alternative approach under "LaunchedEffect" temporarily */
                     stateRowY.scrollBy(-delta)
-                   // Log.i("Rupayan","After stateRowX scrollBy ${stateRowX.scrollBy(-delta)} stateRowY scrollBy ${stateRowY.scrollBy(-delta)}")
-                  /* for(state in stateYList) {
-                        state.scrollBy(-delta)
-                    }*/
+                    // Log.i("Rupayan","After stateRowX scrollBy ${stateRowX.scrollBy(-delta)} stateRowY scrollBy ${stateRowY.scrollBy(-delta)}")
+                    /* for(state in stateYList) {
+                          state.scrollBy(-delta)
+                      }*/
                 }
                 delta
             }
 
-            globalState = rememberScrollState()
+            /* Below two LaunchedEffects are added to sync stateRowX & stateRowY from 2nd page onwards */
+            LaunchedEffect(stateRowX.firstVisibleItemScrollOffset) {
+                if (!stateRowY.isScrollInProgress) {
+                    stateRowY.scrollToItem(
+                        stateRowX.firstVisibleItemIndex,
+                        stateRowX.firstVisibleItemScrollOffset
+                    )
+                }
+            }
+
+            LaunchedEffect(stateRowY.firstVisibleItemScrollOffset) {
+                if (!stateRowX.isScrollInProgress) {
+                    stateRowX.scrollToItem(
+                        stateRowY.firstVisibleItemIndex,
+                        stateRowY.firstVisibleItemScrollOffset
+                    )
+                }
+            }
+
             fixedColumnWidth = 128
             maxProgramCellWidth = LocalConfiguration.current.screenWidthDp - fixedColumnWidth
             GridGuideTheme(darkTheme = false) {
@@ -105,24 +119,6 @@ class MainActivity : ComponentActivity() {
                     }
                 )
             }
-
-          /*  LaunchedEffect(stateRowX.firstVisibleItemScrollOffset) {
-                if (!stateRowY.isScrollInProgress) {
-                    stateRowY.scrollToItem(
-                        stateRowX.firstVisibleItemIndex,
-                        stateRowX.firstVisibleItemScrollOffset
-                    )
-                }
-            }
-
-            LaunchedEffect(stateRowY.firstVisibleItemScrollOffset) {
-                if (!stateRowX.isScrollInProgress) {
-                    stateRowX.scrollToItem(
-                        stateRowY.firstVisibleItemIndex,
-                        stateRowY.firstVisibleItemScrollOffset
-                    )
-                }
-            }*/
         }
     }
 
@@ -137,7 +133,7 @@ class MainActivity : ComponentActivity() {
             contentPadding = PaddingValues(start = 16.dp)
         ) {
             Text(
-                text = "GridGuidePOC",
+                text = "GridGuidePOC1",
                 style = TextStyle(
                     fontSize = MaterialTheme.typography.h6.fontSize,
                     color = MaterialTheme.colors.surface
@@ -173,25 +169,22 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun ProgramList(modifier: Modifier = Modifier) {
         val pagerState = rememberPagerState()
-       /* var stateY = rememberLazyListState()
-        if(stateYList.size > 1){
-            stateY = stateYList[stateYList.size-1]
-        }
-        stateYList.add(stateY)*/
         Column(
             modifier = modifier
                 .fillMaxWidth()
         ) {
             HorizontalPager(
                 count = maxColumns,// INT MAX should be
-               // state = pagerState,
+                // state = pagerState,
                 modifier = Modifier.weight(1f)
             ) { currentPage ->
-                Log.i("Rupayan", "Drawing pager for page : "+currentPage)
+                Log.i("Rupayan", "Drawing pager for page : " + currentPage)
                 Column {
                     ItemCell(rowHeight, "T ${currentPage + 1}")
-                    LazyColumn(state = stateRowY,
-                        userScrollEnabled = false){
+                    LazyColumn(
+                        state = stateRowY,
+                        userScrollEnabled = false
+                    ) {
                         //Log.i("Rupayan", "LazyColumn of program redrawing")
                         itemsIndexed(channelProgramData) { index, item ->
                             Log.i("Rupayan", "LazyColumn of program drawing row $index")
@@ -216,11 +209,13 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun ChannelList() {
-        LazyColumn(state = stateRowX,
-            userScrollEnabled = false) {
+        LazyColumn(
+            state = stateRowX,
+            userScrollEnabled = false
+        ) {
             Log.i("Rupayan", "LazyColumn of channel redrawing")
             items(channelProgramData.size) { index ->
-               // Log.d("TAG","DrawaingRowNumber==$index")
+                // Log.d("TAG","DrawaingRowNumber==$index")
                 Log.i("Rupayan", "LazyColumn of channel drawing row $index")
                 ItemCell(rowHeight, channelProgramData[index].name)
             }
