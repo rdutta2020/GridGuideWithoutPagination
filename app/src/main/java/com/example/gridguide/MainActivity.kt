@@ -48,7 +48,8 @@ class MainActivity : ComponentActivity() {
     var maxProgramCellWidth: Int = 0
 
     val maxRows = 400
-    val maxColumns = 672
+    val maxColumns = 14*24*2 // 14 days future data in advance
+    val minColumns = -3*24*2 // 3 days previous data in advance
     val rowHeight = 60
 
     // @Volatile
@@ -168,19 +169,20 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalPagerApi::class)
     @Composable
     fun ProgramList(modifier: Modifier = Modifier) {
-        val pagerState = rememberPagerState()
+        val pagerState = rememberPagerState(initialPage = -(minColumns))
         Column(
             modifier = modifier
                 .fillMaxWidth()
         ) {
             HorizontalPager(
-                count = maxColumns,// INT MAX should be
-                // state = pagerState,
+                count = maxColumns + (-1)*minColumns,
+                 state = pagerState,
                 modifier = Modifier.weight(1f)
             ) { currentPage ->
                 Log.i("Rupayan", "Drawing pager for page : " + currentPage)
+                val displayPageNumber = currentPage+minColumns
                 Column {
-                    ItemCell(rowHeight, "T ${currentPage + 1}")
+                    ItemCell(rowHeight, "T ${displayPageNumber}")
                     LazyColumn(
                         state = stateRowY,
                         userScrollEnabled = false
@@ -188,7 +190,7 @@ class MainActivity : ComponentActivity() {
                         //Log.i("Rupayan", "LazyColumn of program redrawing")
                         itemsIndexed(channelProgramData) { index, item ->
                             Log.i("Rupayan", "LazyColumn of program drawing row $index")
-                            ItemCell(rowHeight, "P - ${index + 1} - ${currentPage + 1}")
+                            ItemCell(rowHeight, "P - ${index} - ${displayPageNumber}")
                         }
                     }
                 }
@@ -253,10 +255,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun loadLargeData() {
-        for (row in 1..maxRows) {
+        for (row in 0..maxRows-1) {
             val name = "C$row"
             val programList: ArrayList<CellItemData> = ArrayList()
-            for (col in 1..maxColumns) {
+            for (col in minColumns..maxColumns) {
                 if (row % 4 == 0 && col % 2 != 0) {
                     programList.add(CellItemData(String.format("P-%d-%d", row, col), 15))
                 } else {
@@ -265,7 +267,7 @@ class MainActivity : ComponentActivity() {
             }
             channelProgramData.add(ChannelProgramData(name, programList))
         }
-        for (t in 1..maxColumns) {
+        for (t in minColumns..maxColumns) {
             timeslots.add(CellItemData("T$t", 30))
         }
     }
