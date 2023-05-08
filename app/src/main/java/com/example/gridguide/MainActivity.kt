@@ -1,6 +1,7 @@
 package com.example.gridguide
 
 import android.annotation.SuppressLint
+import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -9,6 +10,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,6 +24,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PageSize
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -32,12 +37,10 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.gridguide.ui.theme.GridGuideTheme
-import com.google.accompanist.pager.ExperimentalPagerApi
-import com.google.accompanist.pager.HorizontalPager
-import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -57,6 +60,17 @@ class MainActivity : ComponentActivity() {
 
     //@Volatile
     lateinit var stateRowY: LazyListState
+
+    @OptIn(ExperimentalFoundationApi::class)
+    val customPageSize = object : PageSize {
+        override fun Density.calculateMainAxisPageSize(
+            availableSpace: Int,
+            pageSpacing: Int
+        ): Int {
+            val visiblePageCount = pageCountOnScreen()
+            return (availableSpace - (visiblePageCount-1) * pageSpacing) / visiblePageCount
+        }
+    }
 
     @SuppressLint(
         "UnusedMaterial3ScaffoldPaddingParameter",
@@ -166,7 +180,7 @@ class MainActivity : ComponentActivity() {
     }
 
 
-    @OptIn(ExperimentalPagerApi::class)
+    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun ProgramList(modifier: Modifier = Modifier) {
         val pagerState = rememberPagerState(initialPage = -(minColumns))
@@ -175,8 +189,9 @@ class MainActivity : ComponentActivity() {
                 .fillMaxWidth()
         ) {
             HorizontalPager(
-                count = maxColumns + (-1)*minColumns,
-                 state = pagerState,
+                pageCount = maxColumns + (-1)*minColumns,
+                pageSize = customPageSize,
+                state = pagerState,
                 modifier = Modifier.weight(1f)
             ) { currentPage ->
                 Log.i("Rupayan", "Drawing pager for page : " + currentPage)
@@ -258,18 +273,34 @@ class MainActivity : ComponentActivity() {
         for (row in 0..maxRows-1) {
             val name = "C$row"
             val programList: ArrayList<CellItemData> = ArrayList()
-            for (col in minColumns..maxColumns) {
-                if (row % 4 == 0 && col % 2 != 0) {
-                    programList.add(CellItemData(String.format("P-%d-%d", row, col), 15))
-                } else {
-                    programList.add(CellItemData(String.format("P-%d-%d", row, col), 30))
-                }
-            }
+           // for (col in minColumns..maxColumns) {
+           // for (col in 0..1) { // making less as this is not used now
+              //  if (row % 4 == 0 && col % 2 != 0) {
+              //      programList.add(CellItemData(String.format("P-%d-%d", row, col), 15))
+               // } else {
+                 //   programList.add(CellItemData(String.format("P-%d-%d", row, col), 30))
+              //  }
+          //  }
             channelProgramData.add(ChannelProgramData(name, programList))
         }
-        for (t in minColumns..maxColumns) {
+       /* for (t in minColumns..maxColumns) {
             timeslots.add(CellItemData("T$t", 30))
+        }*/
+    }
+    private fun isPhoneUi(): Boolean {
+        return applicationContext.resources.getBoolean(R.bool.is_phone)
+    }
+
+    private fun isPortrait(): Boolean {
+        return applicationContext.resources.getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT
+    }
+
+    private fun pageCountOnScreen(): Int{
+        var count = 1;
+        if(!isPhoneUi()){
+            if(isPortrait()) count = 2 else count = 3
         }
+        return count
     }
 }
 
