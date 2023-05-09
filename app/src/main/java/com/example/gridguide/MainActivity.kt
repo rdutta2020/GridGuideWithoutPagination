@@ -9,11 +9,9 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.gestures.rememberScrollableState
@@ -27,14 +25,18 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.paint
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
@@ -51,8 +53,8 @@ class MainActivity : ComponentActivity() {
     var maxProgramCellWidth: Int = 0
 
     val maxRows = 400
-    val maxColumns = 14*24*2 // 14 days future data in advance
-    val minColumns = -3*24*2 // 3 days previous data in advance
+    val maxColumns = 14 * 24 * 2 // 14 days future data in advance
+    val minColumns = -3 * 24 * 2 // 3 days previous data in advance
     val rowHeight = 60
 
     // @Volatile
@@ -68,7 +70,7 @@ class MainActivity : ComponentActivity() {
             pageSpacing: Int
         ): Int {
             val visiblePageCount = pageCountOnScreen()
-            return (availableSpace - (visiblePageCount-1) * pageSpacing) / visiblePageCount
+            return (availableSpace - (visiblePageCount - 1) * pageSpacing) / visiblePageCount
         }
     }
 
@@ -172,8 +174,10 @@ class MainActivity : ComponentActivity() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .scrollable(scrollState, Orientation.Vertical)
+                    .background(color = colorResource(id = R.color.tivo_dark_surface))
             ) {
                 ChannelHeaderWithList()
+                Spacer(modifier = Modifier.width(2.dp))
                 ProgramList()
             }
         }
@@ -189,15 +193,15 @@ class MainActivity : ComponentActivity() {
                 .fillMaxWidth()
         ) {
             HorizontalPager(
-                pageCount = maxColumns + (-1)*minColumns,
+                pageCount = maxColumns + (-1) * minColumns,
                 pageSize = customPageSize,
                 state = pagerState,
                 modifier = Modifier.weight(1f)
             ) { currentPage ->
                 Log.i("Rupayan", "Drawing pager for page : " + currentPage)
-                val displayPageNumber = currentPage+minColumns
+                val displayPageNumber = currentPage + minColumns
                 Column {
-                    ItemCell(rowHeight, "T ${displayPageNumber}")
+                    TimeSlotCell(rowHeight, "T ${displayPageNumber}")
                     LazyColumn(
                         state = stateRowY,
                         userScrollEnabled = false
@@ -205,11 +209,95 @@ class MainActivity : ComponentActivity() {
                         //Log.i("Rupayan", "LazyColumn of program redrawing")
                         itemsIndexed(channelProgramData) { index, item ->
                             Log.i("Rupayan", "LazyColumn of program drawing row $index")
-                            ItemCell(rowHeight, "P - ${index} - ${displayPageNumber}")
+                            Spacer(modifier = Modifier.height(2.dp))
+                            ProgramItemCell(rowHeight, "P - ${index} - ${displayPageNumber}")
                         }
                     }
                 }
             }
+        }
+    }
+
+    @Composable
+    fun ProgramItemCell(height: Int, content: String) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(height.dp)
+                .clip(RoundedCornerShape(5.dp))
+                .background(colorResource(id = R.color.tivo_dark_surface))
+                .paint(
+                    painterResource(id = R.drawable.menu__1_),
+                    contentScale = ContentScale.FillBounds
+                )
+        ) {
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                ) {
+                    Text(
+                        text = "New",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = TextStyle(
+                            fontSize = 14.sp,
+                            color = Color.White
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = content,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = TextStyle(
+                            fontSize = 14.sp,
+                            color = Color.White
+                        )
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = content,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color = Color.White
+                    )
+                )
+            }
+        }
+    }
+
+    @Composable
+    fun TimeSlotCell(height: Int, content: String) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(5.dp))
+                .background(colorResource(id = R.color.tivo_dark_surface))
+                .height(height.dp)
+                .paint(
+                    painterResource(id = R.drawable.menu__1_),
+                    contentScale = ContentScale.FillBounds
+                )
+        ) {
+            Text(
+                modifier = Modifier.align(Alignment.Center),
+                text = content,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = TextStyle(
+                    fontSize = 16.sp,
+                    color = Color.White
+                )
+            )
         }
     }
 
@@ -219,7 +307,7 @@ class MainActivity : ComponentActivity() {
             modifier = modifier
                 .fillMaxWidth(.4f)
         ) {
-            ItemCell(rowHeight, "Channel Filter")
+            ChannelHeaderCell(rowHeight, "Channel Filter")
             ChannelList()
         }
     }
@@ -234,18 +322,24 @@ class MainActivity : ComponentActivity() {
             items(channelProgramData.size) { index ->
                 // Log.d("TAG","DrawaingRowNumber==$index")
                 Log.i("Rupayan", "LazyColumn of channel drawing row $index")
-                ItemCell(rowHeight, channelProgramData[index].name)
+                Spacer(modifier = Modifier.height(2.dp))
+                ChannelItemCell(rowHeight, channelProgramData[index].name)
             }
         }
     }
 
     @Composable
-    fun ItemCell(height: Int, content: String) {
+    fun ChannelHeaderCell(height: Int, content: String) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(BorderStroke(1.dp, SolidColor(Color.Blue)))
+                .clip(RoundedCornerShape(5.dp))
+                .background(colorResource(id = R.color.tivo_dark_surface))
                 .height(height.dp)
+                .paint(
+                    painterResource(id = R.drawable.menu__1_),
+                    contentScale = ContentScale.FillBounds
+                )
         ) {
             Text(
                 modifier = Modifier.align(Alignment.Center),
@@ -254,12 +348,29 @@ class MainActivity : ComponentActivity() {
                 overflow = TextOverflow.Ellipsis,
                 style = TextStyle(
                     fontSize = 16.sp,
-                    color = Color.Black
+                    color = Color.White
                 )
             )
         }
     }
 
+    @Composable
+    fun ChannelItemCell(height: Int, content: String) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(height.dp)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_espn),
+                contentDescription = "",
+                modifier = Modifier
+                    .width(65.dp)
+                    .height(60.dp)
+                    .align(Alignment.Center)
+            )
+        }
+    }
 
     private var channelProgramData: ArrayList<ChannelProgramData> = ArrayList()
 
@@ -270,23 +381,24 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun loadLargeData() {
-        for (row in 0..maxRows-1) {
+        for (row in 0..maxRows - 1) {
             val name = "C$row"
             val programList: ArrayList<CellItemData> = ArrayList()
-           // for (col in minColumns..maxColumns) {
-           // for (col in 0..1) { // making less as this is not used now
-              //  if (row % 4 == 0 && col % 2 != 0) {
-              //      programList.add(CellItemData(String.format("P-%d-%d", row, col), 15))
-               // } else {
-                 //   programList.add(CellItemData(String.format("P-%d-%d", row, col), 30))
-              //  }
-          //  }
+            // for (col in minColumns..maxColumns) {
+            // for (col in 0..1) { // making less as this is not used now
+            //  if (row % 4 == 0 && col % 2 != 0) {
+            //      programList.add(CellItemData(String.format("P-%d-%d", row, col), 15))
+            // } else {
+            //   programList.add(CellItemData(String.format("P-%d-%d", row, col), 30))
+            //  }
+            //  }
             channelProgramData.add(ChannelProgramData(name, programList))
         }
-       /* for (t in minColumns..maxColumns) {
-            timeslots.add(CellItemData("T$t", 30))
-        }*/
+        /* for (t in minColumns..maxColumns) {
+             timeslots.add(CellItemData("T$t", 30))
+         }*/
     }
+
     private fun isPhoneUi(): Boolean {
         return applicationContext.resources.getBoolean(R.bool.is_phone)
     }
@@ -295,10 +407,10 @@ class MainActivity : ComponentActivity() {
         return applicationContext.resources.getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT
     }
 
-    private fun pageCountOnScreen(): Int{
+    private fun pageCountOnScreen(): Int {
         var count = 1;
-        if(!isPhoneUi()){
-            if(isPortrait()) count = 2 else count = 3
+        if (!isPhoneUi()) {
+            if (isPortrait()) count = 2 else count = 3
         }
         return count
     }
