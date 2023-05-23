@@ -9,4 +9,10 @@
     <color name="white">#FFFFFFFF</color>
     <color name="tivo_dark_surface">#1b1d1f</color>
     <color name="tivo_dark_surface_2">#63666a</color>
+    <color name="tivo_dark_on_surface">#cbe6ff</color>
+    <color name="tivo_dark_on_surface_varient">#c0c7cd</color>
+    <color name="tivo_dark_outline">#8b9297</color>
+    <color name="tivo_dark_outline_opacity">#938f99</color>
+    <color name="tivo_system_dark_primary">#7cd0ff</color>
+    <color name="black_00">#00000000</color>
 </resources>
