@@ -37,6 +37,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.paint
@@ -178,8 +179,7 @@ class MainActivity : ComponentActivity() {
                     if (isPhoneUi()) {
                         Box(
                             modifier = Modifier
-                                .fillMaxHeight(.6f)
-                                .background(Color.Green)
+                                .fillMaxHeight()
                         ) {
                             MainContent()
                         }
@@ -187,7 +187,6 @@ class MainActivity : ComponentActivity() {
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(Color.Blue)
                         ) {
                             Box(
                                 modifier = Modifier
@@ -434,6 +433,7 @@ class MainActivity : ComponentActivity() {
                 .fillMaxWidth(widthFraction)
                 .height(height.dp)
                 .clip(RoundedCornerShape(5.dp))
+                .background(Color.White.copy(alpha = 0.08f))
                 .clickable {
                     if (isPhoneUi()) {
                         scope.launch {
@@ -446,12 +446,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.program_cell_bg),
-                contentScale = ContentScale.FillBounds,
-                contentDescription = "",
-                modifier = Modifier.fillMaxWidth()
-            )
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -506,13 +500,8 @@ class MainActivity : ComponentActivity() {
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(5.dp))
                 .height(height.dp)
+                .background(Color.White.copy(alpha = 0.12f))
         ) {
-            Image(
-                modifier = Modifier.fillMaxWidth(),
-                painter = painterResource(id = R.drawable.program_cell_bg),
-                contentScale = ContentScale.FillBounds,
-                contentDescription = ""
-            )
             Text(
                 modifier = Modifier.align(Alignment.Center),
                 text = content,
@@ -560,12 +549,8 @@ class MainActivity : ComponentActivity() {
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(5.dp))
                 .height(height.dp)
+                .background(Color.White.copy(alpha = 0.12f))
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.program_cell_bg),
-                contentScale = ContentScale.FillBounds,
-                contentDescription = ""
-            )
             Text(
                 modifier = Modifier.align(Alignment.Center),
                 text = content,
