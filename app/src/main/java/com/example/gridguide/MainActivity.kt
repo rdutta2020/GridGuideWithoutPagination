@@ -10,7 +10,6 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.ScrollableState
@@ -18,13 +17,13 @@ import androidx.compose.foundation.gestures.rememberScrollableState
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
+
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -41,7 +40,6 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
@@ -49,26 +47,40 @@ import com.example.gridguide.model.GuideCell
 import com.example.gridguide.ui.theme.GridGuideTheme
 import com.example.gridguide.viewmodel.GuideViewModel
 import kotlinx.coroutines.launch
-import java.text.DateFormat
-import java.text.SimpleDateFormat
-import java.util.Date
+import kotlin.time.toDuration
 
 class MainActivity : ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 
     companion object {
         const val TAG = "GuideViewModel"
+        val timeDurationPerSlot = 60*30 // each time slot is of 30 minutes
+        var futurePageCount = 0
+        var pastPageCount = 0
+
+        // below values will be initialized in configure() function
+        var timeSlotPerPage = 0 // how many time slots we should display per page
+        var timeDurationPerPage = 0 // how much time duration covered in one page (timeDurationPerSlot*timeSlotPerPage)
+        var timeslotsToLoadPerCall = 0 // how many timeslots we need to fill after each response
+        fun findStartTimeOfTimeSlot(second: Long): Long {
+            val fraction = second / timeDurationPerSlot
+            return fraction * timeDurationPerSlot
+        }
     }
 
     lateinit var scrollState: ScrollableState
-    var fixedColumnWidth: Int = 0
+    var fixedColumnWidth: Int = 88
     var maxProgramCellWidth: Int = 0
 
-    var maxRows = 400
-    val maxColumns = 14 * 24 * 2 // 14 days future data in advance
-    val minColumns = -3 * 24 * 2 // 3 days previous data in advance
+   // val maxColumns = 14 * 24 * 2 // 14 days future data in advance
+   // val minColumns = -3 * 24 * 2 // 3 days previous data in advance
+
+
+
+
+    // TODO: Define them in constant format
     val rowHeight = 60
-    val ONE_SLOT_IN_SEC = 60*30
+
 
     // @Volatile
     lateinit var stateRowX: LazyListState
@@ -84,7 +96,7 @@ class MainActivity : ComponentActivity() {
     var mLastVisibleIndex = 0
 
     @OptIn(ExperimentalFoundationApi::class)
-    val customPageSize = object : PageSize {
+   /* val customPageSize = object : PageSize {
         override fun Density.calculateMainAxisPageSize(
             availableSpace: Int,
             pageSpacing: Int
@@ -94,7 +106,7 @@ class MainActivity : ComponentActivity() {
 
              //return (297 * resources.displayMetrics.density).toInt()
         }
-    }
+    }*/
 
     @SuppressLint(
         "UnusedMaterial3ScaffoldPaddingParameter",
@@ -102,9 +114,10 @@ class MainActivity : ComponentActivity() {
     )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        configure()
         guideViewModel = ViewModelProvider(this).get(GuideViewModel::class.java)
-        maxRows = guideViewModel.totalChannelCount
-        initialize()
+        //maxRows = guideViewModel.totalChannelCount
+        //initialize()
         setContent {
             stateRowX = rememberLazyListState() // State for the first Row, X
             stateRowY = rememberLazyListState() // State for the second Row, Y
@@ -173,19 +186,6 @@ class MainActivity : ComponentActivity() {
                             currentTimeSlotStartTime,
                             firstIndex,
                             lastIndex)
-                        /*if(scrollingUp) {
-                            guideViewModel.fetchGuideDataIfRequired(
-                                currentTimeSlotStartTime,
-                                firstIndex + 1,
-                                lastIndex
-                            )
-                        }else{
-                            guideViewModel.fetchGuideDataIfRequired(
-                                currentTimeSlotStartTime,
-                                firstIndex,
-                                lastIndex+1
-                            )
-                        }*/
                     }
                 }
             }
@@ -214,7 +214,7 @@ class MainActivity : ComponentActivity() {
                     "last visible:  ${stateRowY.layoutInfo.visibleItemsInfo.lastOrNull()?.index} " +
                     "total: ${stateRowY.layoutInfo.totalItemsCount}")
 */
-            fixedColumnWidth = 128
+           // fixedColumnWidth = 128
             maxProgramCellWidth = LocalConfiguration.current.screenWidthDp - fixedColumnWidth
             GridGuideTheme(darkTheme = false) {
                 val lazyListState = rememberLazyListState()
@@ -231,6 +231,19 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    private fun configure() {
+        timeSlotPerPage = timeSlotCountPerPage()
+        val futureTimeSlotsCount = 14 * 24 * 2 // 14 days future data in advance
+        val pastTimeSlotsCount = 3 * 24 * 2 // 3 days previous data in advance
+
+        futurePageCount = futureTimeSlotsCount/timeSlotPerPage
+        pastPageCount = pastTimeSlotsCount / timeSlotPerPage
+
+        timeDurationPerPage = timeDurationPerSlot*timeSlotPerPage
+
+        Log.i(TAG,"timeSlotPerPage $timeSlotPerPage futurePageCount $futurePageCount pastPageCount $pastPageCount timeDurationPerPage $timeDurationPerPage")
     }
 
     @Composable
@@ -299,26 +312,43 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun ProgramList(modifier: Modifier = Modifier) {
-        val pagerState = rememberPagerState(initialPage = -(minColumns))
+        val pagerState = rememberPagerState(initialPage = pastPageCount)
         Column(
             modifier = modifier
                 .fillMaxWidth()
+               // .background(Color.Red)
         ) {
             HorizontalPager(
-                pageCount = maxColumns + (-1) * minColumns,
-                pageSize = customPageSize,
-                state = pagerState
-               // modifier = Modifier.weight(1f)
+                pageCount = futurePageCount + pastPageCount,
+               // pageSize = customPageSize,
+                state = pagerState,
+              //  modifier = Modifier.background(Color.Green)
             ) { currentPage ->
 
-                val displayPageNumber = currentPage + minColumns
+                val displayPageNumber = currentPage - pastPageCount
                 //Log.i(TAG, "Drawing pager for page : " + displayPageNumber)
                 val currentTimeSlotStartTime =
                     findStartTimeOfTimeSlot(System.currentTimeMillis() / 1000)
                 val currentPageSlotStartTime =
-                    currentTimeSlotStartTime + (displayPageNumber * ONE_SLOT_IN_SEC)
-                Column {
-                    TimeSlotCell(rowHeight, "T ${currentPageSlotStartTime}+({$displayPageNumber})")
+                    currentTimeSlotStartTime + (displayPageNumber * timeDurationPerPage)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(Modifier.padding(end = 2.dp))
+                        //.background(Color.Yellow)
+                )  {
+                    Row(modifier = Modifier
+                        .fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween){
+
+                        val widthFraction = (1F / timeSlotPerPage.toFloat())
+                        Log.i("Rupayan5", "Time slot widthFraction $widthFraction")
+                        val timeSlotWidth = (LocalConfiguration.current.screenWidthDp - fixedColumnWidth) / timeSlotPerPage
+                        for(timeSlotIndex in 0..timeSlotPerPage-1) {
+                            TimeSlotCell(rowHeight, "T ${currentPageSlotStartTime + (timeSlotIndex*timeDurationPerSlot)}+(${displayPageNumber* timeSlotPerPage+timeSlotIndex})+($currentPage)", 0.5F, modifier, timeSlotWidth)
+                            Spacer(modifier = Modifier.width(2.dp))
+                            }
+                        }
+                    val totalProgramCellsWidthForRow = (LocalConfiguration.current.screenWidthDp - fixedColumnWidth)
                     LazyColumn(
                         state = stateRowY,
                         userScrollEnabled = false
@@ -339,13 +369,13 @@ class MainActivity : ComponentActivity() {
                             Spacer(modifier = Modifier.height(2.dp))
                             LazyRow(userScrollEnabled = false) {
                                 itemsIndexed(programListForTimeSlot.get(index).programs) { indexRow, itemRow ->
-                                    if(indexRow == 1){
-                                        Log.i("Rupayan2", "Two programs in  time slot $displayPageNumber and row $indexRow")
-                                    }
+                                    val durationUnderCurrentPage = if(itemRow.startTime < currentPageSlotStartTime) (itemRow.duration - (currentPageSlotStartTime - itemRow.startTime)) else itemRow.duration
                                     val widthFraction =
-                                        if (itemRow.duration >= ONE_SLOT_IN_SEC) 1f else (itemRow.duration.toFloat() / ONE_SLOT_IN_SEC.toFloat())
+                                        if (durationUnderCurrentPage.toInt() >= timeDurationPerPage) 1f else (durationUnderCurrentPage.toFloat() / timeDurationPerPage.toFloat())
                                     Log.i("Rupayan2", "Two programs in  time slot $displayPageNumber row $index column $indexRow widthFraction $widthFraction duration ${itemRow.duration} title ${itemRow.title}")
-                                    ProgramItemCell(rowHeight, itemRow.contentId, widthFraction)
+                                    // add spacer based on startTime, we need to check if there is a gap
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    ProgramItemCell(rowHeight, itemRow, widthFraction*totalProgramCellsWidthForRow)
                                 }
                             }
                         }
@@ -355,23 +385,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun findStartTimeOfTimeSlot(second: Long) : Long {
-        val fraction = second / ONE_SLOT_IN_SEC
-        return fraction * ONE_SLOT_IN_SEC
-    }
-
     @Composable
-    fun ProgramItemCell(height: Int, content: String, widthFraction: Float) {
+    fun ProgramItemCell(height: Int, cellData: GuideCell, width: Float) {
         Box(
             modifier = Modifier
-                .fillMaxWidth(widthFraction)
+                .width(width.dp)
                 .height(height.dp)
                 .clip(RoundedCornerShape(5.dp))
                 .background(colorResource(id = R.color.tivo_dark_surface))
-               /* .paint(
+                /*(.paint(
                     painterResource(id = R.drawable.menu__1_),
                     contentScale = ContentScale.FillBounds
                 )*/
+                .background(Color.White.copy(alpha = 0.08f))
         ) {
             Column(
                 modifier = Modifier
@@ -404,9 +430,29 @@ class MainActivity : ComponentActivity() {
                             )
                         )
                     }*/
-                  //  Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = content,
+                        text = cellData.startTime.toString(),
+                        maxLines = 1,
+                        // overflow = TextOverflow.Ellipsis,
+                        style = TextStyle(
+                            fontSize = 14.sp,
+                            color = Color.White
+                        )
+                    )
+                Spacer(modifier = Modifier.width(2.dp))
+                    Text(
+                        text = cellData.duration.toString(),
+                        maxLines = 1,
+                        // overflow = TextOverflow.Ellipsis,
+                        style = TextStyle(
+                            fontSize = 14.sp,
+                            color = Color.White
+                        )
+                    )
+                Spacer(modifier = Modifier.width(2.dp))
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text(
+                        text = cellData.contentId,
                         maxLines = 1,
                        // overflow = TextOverflow.Ellipsis,
                         style = TextStyle(
@@ -419,17 +465,25 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun TimeSlotCell(height: Int, content: String) {
+    fun TimeSlotCell(
+        height: Int,
+        content: String,
+        widthFraction: Float,
+        modifier: Modifier,
+        timeSlotWidth: Int
+    ) {
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
+            modifier = modifier
+                //.fillMaxWidth()
+                .width(timeSlotWidth.dp)
                 .clip(RoundedCornerShape(5.dp))
-                .background(colorResource(id = R.color.tivo_dark_surface))
+                //.background(colorResource(id = R.color.tivo_dark_surface))
                 .height(height.dp)
-                .paint(
+                /*.paint(
                     painterResource(id = R.drawable.menu__1_),
                     contentScale = ContentScale.FillBounds
-                )
+                )*/
+                .background(Color.White.copy(alpha = 0.12f)),
         ) {
             Text(
                 modifier = Modifier.align(Alignment.Center),
@@ -448,7 +502,8 @@ class MainActivity : ComponentActivity() {
     fun ChannelHeaderWithList(modifier: Modifier = Modifier) {
         Column(
             modifier = modifier
-                .fillMaxWidth(.4f)
+                .width(fixedColumnWidth.dp)
+                .background(Color.Blue)
         ) {
             ChannelHeaderCell(rowHeight, "Channel Filter")
             ChannelList()
@@ -559,10 +614,10 @@ class MainActivity : ComponentActivity() {
     private var timeslots: ArrayList<CellItemData> = ArrayList()
 
     private fun initialize() {
-        loadLargeData()
+        //loadLargeData()
     }
 
-    private fun loadLargeData() {
+   /* private fun loadLargeData() {
         for (row in 0..maxRows - 1) {
             val name = "C$row"
             val programList: ArrayList<CellItemData> = ArrayList()
@@ -576,10 +631,10 @@ class MainActivity : ComponentActivity() {
             //  }
             channelProgramData.add(ChannelProgramData(name, programList))
         }
-        /* for (t in minColumns..maxColumns) {
+        for (t in minColumns..maxColumns) {
              timeslots.add(CellItemData("T$t", 30))
-         }*/
-    }
+         }
+    }*/
 
     private fun isPhoneUi(): Boolean {
         return applicationContext.resources.getBoolean(R.bool.is_phone)
@@ -589,10 +644,10 @@ class MainActivity : ComponentActivity() {
         return applicationContext.resources.getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT
     }
 
-    private fun pageCountOnScreen(): Int {
+    private fun timeSlotCountPerPage(): Int {
         var count = 1;
         if (!isPhoneUi()) {
-            if (isPortrait()) count = 2 else count = 3
+            if (isPortrait()) count = 3 else count = 3
         }
         return count
     }

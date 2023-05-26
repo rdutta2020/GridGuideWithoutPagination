@@ -11,12 +11,14 @@ import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.gridguide.ListState
+import com.example.gridguide.MainActivity
 import com.example.gridguide.ProgramsForTimeSlot
 import com.example.gridguide.model.ContentType
 import com.example.gridguide.model.GuideCell
 import com.example.gridguide.model.GuideRow
 import com.example.gridguide.network.RetrofitInstance
 import com.squareup.moshi.Json
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
@@ -73,7 +75,7 @@ class GuideViewModel : ViewModel() {
     )
 
     val NUMBER_OF_STATIONS_PER_CALL = 10
-    val DURATION_PER_CALL = 4 * 60 * 60 // 4hr in seconds
+    val TIME_DURATION_PER_CALL = 3 * 60 * 60 // we ask for 3hr data in one guideRow call
     val DURATION_PER_SLOT = 30 * 60 // 30 mins in seconds
 
     val ONE_SLOT_IN_SEC = 60 * 30
@@ -88,11 +90,20 @@ class GuideViewModel : ViewModel() {
     val totalChannelCount = stationIds.size
     lateinit var dummyProgramsForTimeSlot : ArrayList<ProgramsForTimeSlot>
 
+    // below parameters will be initialized in configure()
+    var pagesToLoadPerCall = 0 ; // how many pages are loaded per call
+
     init {
+        configure()
         createDummyProgramList()
-        val currentTime = findStartTimeOfTimeSlot(System.currentTimeMillis() / 1000)
+        val currentTime = MainActivity.findStartTimeOfTimeSlot(System.currentTimeMillis() / 1000)
         createTimeSlotBasedProgramLists(currentTime)
         fetchGuideDataIfRequired(currentTime, 0, 0)
+    }
+
+    private fun configure() {
+        pagesToLoadPerCall = TIME_DURATION_PER_CALL / MainActivity.timeDurationPerPage
+        Log.i(TAG,"pagesToLoadPerCall $pagesToLoadPerCall")
     }
 
     fun fetchGuideDataIfRequired(timeSlot: Long, firstVisibleItemIndex: Int, lastVisibleItemIndex: Int){
@@ -137,14 +148,16 @@ class GuideViewModel : ViewModel() {
         //lastCallStartTime = timeSlot
         //val currentTime = findStartTimeOfTimeSlot(System.currentTimeMillis() / 1000)
 
-        // we can fetch 4hr data at max from API, so we plan to fetch like below
-        // <3 slots before><current slot><4 slot after>
+        /* we can fetch 4hr data at max from API, but we are fetching 3hr i.e. 6 timeslots as 6 is
+        divisible by 3 which is landscape timeslot count per page */
+
+        // TODO : Must fix
         val startTime = timeSlot - 3*DURATION_PER_SLOT
-        val endTime = timeSlot + 4*DURATION_PER_SLOT
+        val endTime = timeSlot + 3*DURATION_PER_SLOT
         lastCallStartTime = startTime
         guideCallEndStationIdIndex = Math.min(guideCallStartStationIdIndex+NUMBER_OF_STATIONS_PER_CALL,totalChannelCount)-1
         // 1st call with current channel list visible
-        Log.i(TAG,"guideRows call station list start index ${guideCallStartStationIdIndex} timeSlot $timeSlot")
+        Log.i(TAG,"guideRows call station list start index ${guideCallStartStationIdIndex} end index ${guideCallEndStationIdIndex} timeSlot $timeSlot")
         getGridGuide(
             prepareStationIdList(guideCallStartStationIdIndex, guideCallEndStationIdIndex),
             startTime, endTime
@@ -152,9 +165,9 @@ class GuideViewModel : ViewModel() {
 
         // 2nd call with previous channel list (NUMBER_OF_STATIONS_PER_CALL items)
         val prevGuideCallStartStationIdIndex = Math.max(guideCallStartStationIdIndex- NUMBER_OF_STATIONS_PER_CALL, 0)
-        val prevGuideCallEndStationIdIndex = Math.min(prevGuideCallStartStationIdIndex + NUMBER_OF_STATIONS_PER_CALL, totalChannelCount-1);
+        val prevGuideCallEndStationIdIndex = Math.min(prevGuideCallStartStationIdIndex + NUMBER_OF_STATIONS_PER_CALL-1, totalChannelCount-1);
         if(prevGuideCallStartStationIdIndex < prevGuideCallEndStationIdIndex) {
-            Log.i(TAG,"guideRows call station list prev start index ${prevGuideCallStartStationIdIndex} timeSlot $timeSlot")
+            Log.i(TAG,"guideRows call station list prev call start index ${prevGuideCallStartStationIdIndex} end index ${prevGuideCallEndStationIdIndex}  timeSlot $timeSlot")
             getGridGuide(
                 prepareStationIdList(prevGuideCallStartStationIdIndex, prevGuideCallEndStationIdIndex),
                 startTime, endTime
@@ -163,9 +176,9 @@ class GuideViewModel : ViewModel() {
 
         // 3rd call with next channel list (NUMBER_OF_STATIONS_PER_CALL items)
         val nextGuideCallStartStationIdIndex = Math.min(guideCallStartStationIdIndex+ NUMBER_OF_STATIONS_PER_CALL, stationIds.size-1)
-        val nextGuideCallEndStationIdIndex = Math.min(nextGuideCallStartStationIdIndex + NUMBER_OF_STATIONS_PER_CALL, totalChannelCount-1);
+        val nextGuideCallEndStationIdIndex = Math.min(nextGuideCallStartStationIdIndex + NUMBER_OF_STATIONS_PER_CALL-1, totalChannelCount-1);
         if(nextGuideCallStartStationIdIndex < nextGuideCallEndStationIdIndex) {
-            Log.i(TAG,"guideRows call station list next start index ${nextGuideCallStartStationIdIndex} timeSlot $timeSlot")
+            Log.i(TAG,"guideRows call station list next call start index ${nextGuideCallStartStationIdIndex} end index ${nextGuideCallEndStationIdIndex}  timeSlot $timeSlot")
             getGridGuide(
                 prepareStationIdList(nextGuideCallStartStationIdIndex, nextGuideCallEndStationIdIndex),
                 startTime, endTime
@@ -202,15 +215,11 @@ class GuideViewModel : ViewModel() {
         return idListString.toString()
     }
 
-    private fun findStartTimeOfTimeSlot(second: Long): Long {
-        val fraction = second / ONE_SLOT_IN_SEC
-        return fraction * ONE_SLOT_IN_SEC
-    }
 
 
     fun getGridGuide(stationIdList: String, startTime: Long, endTime: Long) {
         //createTimeSlotBasedProgramLists(startTime)
-        viewModelScope.launch {
+      //  viewModelScope.launch(Dispatchers.IO) {
             Log.i(TAG,"stationIdList ${stationIdList} startTime ${startTime} endTime ${endTime}")
             val call = RetrofitInstance.api.guideRowsGet(
              //   featureArea = "GridGuide",
@@ -237,25 +246,28 @@ class GuideViewModel : ViewModel() {
                     call: Call<List<GuideRow>>,
                     response: Response<List<GuideRow>>
                 ) {
-                    t2 = System.currentTimeMillis()
-                    Log.d(TAG, "Success Case Time taken in API call (ms) =${t2-t1}")
-                    Log.d(TAG, "APIRESPONSE==${response.body()}")
-                    val reponseData = response.body()?.toMutableList()
-                    if (reponseData != null) {
-                        val reponseDataSorted =
-                            reponseData.sortedBy { lastCallStationIds.indexOf(it.stationId) }
-                        // split the data for 8 timeslots (4hr)
-                        for (t in 0..7) {
-                            addProgramListForTimeStamp(
-                                reponseDataSorted,
-                                lastCallStartTime + (t * ONE_SLOT_IN_SEC)
-                            )
-                            //fillProgramAvailabilityListStatus(lastCallStartTime + (t * ONE_SLOT_IN_SEC))
+                  //  viewModelScope.launch(Dispatchers.IO) {
+                        t2 = System.currentTimeMillis()
+                        Log.d(TAG, "Success Case Time taken in API call (ms) =${t2 - t1}")
+                        Log.d(TAG, "APIRESPONSE==${response.body()}")
+                        val reponseData = response.body()?.toMutableList()
+                        if (reponseData != null) {
+                            // ToDO : Station id maps
+                            val reponseDataSorted =
+                                reponseData.sortedBy { lastCallStationIds.indexOf(it.stationId) }
+                            // split the data for "pagesToLoadPerCall" pages
+                            for (t in 0..pagesToLoadPerCall-1) {
+                                addProgramListForTimeStamp(
+                                    reponseDataSorted,
+                                    lastCallStartTime + (t * MainActivity.timeDurationPerPage)
+                                )
+                                //fillProgramAvailabilityListStatus(lastCallStartTime + (t * ONE_SLOT_IN_SEC))
+                            }
                         }
-                    }
-                    val t3 = System.currentTimeMillis()
-                    Log.d(TAG, "Time taken in data manupulation (ms) =${t3-t2}")
-                    listState = ListState.IDLE
+                        val t3 = System.currentTimeMillis()
+                        Log.d(TAG, "Time taken in data manupulation (ms) =${t3 - t2}")
+                        listState = ListState.IDLE
+                 //   }
                 }
 
                 override fun onFailure(call: Call<List<GuideRow>>, t: Throwable) {
@@ -266,7 +278,7 @@ class GuideViewModel : ViewModel() {
                     listState = ListState.IDLE
                 }
             })
-        }
+     //   }
     }
 
     /*private fun fillProgramAvailabilityListStatus(timeSlot: Long) {
@@ -286,15 +298,12 @@ class GuideViewModel : ViewModel() {
     private fun createTimeSlotBasedProgramLists(startTime: Long) {
         // split the data for 8 timeslots (4hr)
         // we need to show 3 days back and 14 days advance data
-        val startIndex = -3*24*2
-        val endIndex = 14*24*2
+        val startIndex = -MainActivity.pastPageCount
+        val endIndex = MainActivity.futurePageCount-1
         for (t in startIndex..endIndex) {
-            val timeSlot = startTime+ (t * ONE_SLOT_IN_SEC)
+            val timeSlot = startTime+ (t * MainActivity.timeDurationPerPage)
          //   if (!startTimeToProgramListMap.contains(timeSlot)) {
                 // this timeslot is not in map yet, create one
-            if(t == 0){
-                Log.i(TAG, "timeSlot is $timeSlot")
-            }
             startTimeToProgramListMap.put(timeSlot, dummyProgramsForTimeSlot.toMutableStateList())
             startTimeToProgramListAvailabilityMap.put(timeSlot, BooleanArray(totalChannelCount))
               //  Log.d(TAG, "createTimeSlotBasedProgramLists for timeslot ${timeSlot}")
@@ -323,7 +332,8 @@ class GuideViewModel : ViewModel() {
     private fun addProgramListForTimeStamp(
         guideRows: List<GuideRow>,
         timeSlot: Long
-    ) {// futher optimization of this function can be done by doing computation for 8 timeslots together
+    ) {// TODO : further optimization of this function can be done by doing computation for 8 timeslots together
+        Log.i(TAG, "addProgramListForTimeStamp  timeSlot $timeSlot")
         val programList = startTimeToProgramListMap.get(timeSlot)!!
         val programListAvailabilityStatus = startTimeToProgramListAvailabilityMap.get(timeSlot)!!
         for (rowNumber in 0..guideRows.size-1) {
@@ -337,7 +347,7 @@ class GuideViewModel : ViewModel() {
                     // program continuing from last time slot
                     cells.add(cell)
                 } else if (cell.startTime >= timeSlot &&
-                    cell.startTime < timeSlot + DURATION_PER_SLOT
+                    cell.startTime < timeSlot + MainActivity.timeDurationPerPage
                 ) {
                     // program starting in this time slot
                     cells.add(cell)
@@ -347,6 +357,7 @@ class GuideViewModel : ViewModel() {
             // TODO:: Can we avoid using programListAvailabilityStatus alltogether
             val rowNumberForStationId = stationIds.indexOf(guideRows.get(rowNumber).stationId)
             if(rowNumberForStationId >=0 && rowNumberForStationId < stationIds.size) {
+                Log.i(TAG, "addProgramListForTimeStamp  rowNumberForStationId $rowNumberForStationId")
                 programList.set(rowNumberForStationId, ProgramsForTimeSlot(cells))
                 programListAvailabilityStatus[rowNumberForStationId] = true
             }
