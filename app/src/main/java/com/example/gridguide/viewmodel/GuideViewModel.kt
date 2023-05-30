@@ -85,8 +85,8 @@ class GuideViewModel : ViewModel() {
     var lastCallStartTime = 0L
     lateinit var lastCallStationIds: List<String>
     var listState by mutableStateOf(ListState.IDLE)
-   // var lastGuideCallStartStationIdIndex = 0
-   // var lastGuideCallEndStationIdIndex = 0
+    // var lastGuideCallStartStationIdIndex = 0
+    // var lastGuideCallEndStationIdIndex = 0
     val totalChannelCount = stationIds.size
     lateinit var dummyProgramsForTimeSlot : ArrayList<ProgramsForTimeSlot>
 
@@ -98,7 +98,7 @@ class GuideViewModel : ViewModel() {
         createDummyProgramList()
         val currentTime = MainActivity.findStartTimeOfTimeSlot(System.currentTimeMillis() / 1000)
         createTimeSlotBasedProgramLists(currentTime)
-        fetchGuideDataIfRequired(currentTime, 0, 0)
+        //fetchGuideDataIfRequired(currentTime, 0, 0)
     }
 
     private fun configure() {
@@ -109,41 +109,42 @@ class GuideViewModel : ViewModel() {
     fun fetchGuideDataIfRequired(timeSlot: Long, firstVisibleItemIndex: Int, lastVisibleItemIndex: Int){
         if(listState == ListState.LOADING){
             // TODO : Queuing required otherwise some important request will be ignored
-            Log.i(TAG,"already api is running")
+            Log.i(TAG,"SHYAK===> already api is running")
             return
         }
         Log.i(TAG,"fetchGuideDataIfRequired timeSlot ${timeSlot} firstVisibleItemIndex " +
                 "${firstVisibleItemIndex} lastVisibleItemIndex ${lastVisibleItemIndex}")
         var guideCallStartStationIdIndex = 0
         var guideCallEndStationIdIndex = 0
-       // if(startTimeToProgramListAvailabilityMap.containsKey(timeSlot)){
-            val programListAvailabilityList = startTimeToProgramListAvailabilityMap.get(timeSlot)
-            programListAvailabilityList?.let {
-                if(firstVisibleItemIndex < 0 || lastVisibleItemIndex >= totalChannelCount){
-                    // we cannot scroll beyond the station list size
-                    return
-                }
-                if(programListAvailabilityList.get(firstVisibleItemIndex) &&
-                    programListAvailabilityList.get(lastVisibleItemIndex)){
-                    // both indexes' data already fetched, no need to call guide API
-                    return
-                }else if(!(programListAvailabilityList.get(firstVisibleItemIndex)) &&
-                    programListAvailabilityList.get(lastVisibleItemIndex)){
-                    // when vertically scrolling up and if data was not fetched earlier
-                    guideCallStartStationIdIndex = if (firstVisibleItemIndex > NUMBER_OF_STATIONS_PER_CALL) (firstVisibleItemIndex - NUMBER_OF_STATIONS_PER_CALL) else 0
-                }else if(programListAvailabilityList.get(firstVisibleItemIndex) &&
-                    !(programListAvailabilityList.get(lastVisibleItemIndex))) {
-                    // when vertically scrolling down and if data was not fetched earlier
-                    guideCallStartStationIdIndex = lastVisibleItemIndex
-                }else{
-                    guideCallStartStationIdIndex = firstVisibleItemIndex
-                }
+        // if(startTimeToProgramListAvailabilityMap.containsKey(timeSlot)){
+        val programListAvailabilityList = startTimeToProgramListAvailabilityMap.get(timeSlot)
+        programListAvailabilityList?.let {
+            if(firstVisibleItemIndex < 0 || lastVisibleItemIndex >= totalChannelCount){
+                // we cannot scroll beyond the station list size
+                return
             }
-     /*   }else{
-            // when app is launched for 1st time
-            // TODO :: May not be required
-            lastGuideCallStartStationIdIndex = firstVisibleItemIndex
-        }*/
+            if(programListAvailabilityList.get(firstVisibleItemIndex) &&
+                programListAvailabilityList.get(lastVisibleItemIndex)){
+                // both indexes' data already fetched, no need to call guide API
+                Log.i(MainActivity.TAG, "SHYAK===> NO API CALL")
+                return
+            }else if(!(programListAvailabilityList.get(firstVisibleItemIndex)) &&
+                programListAvailabilityList.get(lastVisibleItemIndex)){
+                // when vertically scrolling up and if data was not fetched earlier
+                guideCallStartStationIdIndex = if (firstVisibleItemIndex > NUMBER_OF_STATIONS_PER_CALL) (firstVisibleItemIndex - NUMBER_OF_STATIONS_PER_CALL) else 0
+            }else if(programListAvailabilityList.get(firstVisibleItemIndex) &&
+                !(programListAvailabilityList.get(lastVisibleItemIndex))) {
+                // when vertically scrolling down and if data was not fetched earlier
+                guideCallStartStationIdIndex = lastVisibleItemIndex
+            }else{
+                guideCallStartStationIdIndex = firstVisibleItemIndex
+            }
+        }
+        /*   }else{
+               // when app is launched for 1st time
+               // TODO :: May not be required
+               lastGuideCallStartStationIdIndex = firstVisibleItemIndex
+           }*/
         listState = ListState.LOADING
         //lastCallStartTime = timeSlot
         //val currentTime = findStartTimeOfTimeSlot(System.currentTimeMillis() / 1000)
@@ -200,7 +201,7 @@ class GuideViewModel : ViewModel() {
     }
 
     private fun prepareStationIdList(startStationIdIndex:Int, endStationIdIndex:Int): String {
-       // lastGuideCallEndStationIdIndex = Math.min(lastGuideCallStartStationIdIndex+NUMBER_OF_STATIONS_PER_CALL,totalChannelCount)-1
+        // lastGuideCallEndStationIdIndex = Math.min(lastGuideCallStartStationIdIndex+NUMBER_OF_STATIONS_PER_CALL,totalChannelCount)-1
         val stationIdList = stationIds.subList(startStationIdIndex, endStationIdIndex+1)
         val mutableStationIdList = stationIdList.toMutableList()
         lastCallStationIds = stationIdList
@@ -218,67 +219,68 @@ class GuideViewModel : ViewModel() {
 
 
     fun getGridGuide(stationIdList: String, startTime: Long, endTime: Long) {
+        Log.i(MainActivity.TAG, "SHYAK===> Starting API Call startTime $startTime")
         //createTimeSlotBasedProgramLists(startTime)
-      //  viewModelScope.launch(Dispatchers.IO) {
-            Log.i(TAG,"stationIdList ${stationIdList} startTime ${startTime} endTime ${endTime}")
-            val call = RetrofitInstance.api.guideRowsGet(
-             //   featureArea = "GridGuide",
-                msoPartnerId = "tivo:pt.5058",
-                stationId = stationIdList,
-                windowStartTime = startTime,
-                windowEndTime = endTime,
+        //  viewModelScope.launch(Dispatchers.IO) {
+        Log.i(TAG,"stationIdList ${stationIdList} startTime ${startTime} endTime ${endTime}")
+        val call = RetrofitInstance.api.guideRowsGet(
+            //   featureArea = "GridGuide",
+            msoPartnerId = "tivo:pt.5058",
+            stationId = stationIdList,
+            windowStartTime = startTime,
+            windowEndTime = endTime,
             /*    applicationVersion = "4.11.0-20230314-0430",
                 deviceType = "androidPhone",*/
-                requestId = generateRequestId(),
-             /*   language = "en-US",
-                productName = "Tivo Mobile IPTV v.4.11.0-20230314-0430 Quickdroid",
-                amznRequestId = "1678820014055-3047906886224678661",*/
+            requestId = generateRequestId(),
+            /*   language = "en-US",
+               productName = "Tivo Mobile IPTV v.4.11.0-20230314-0430 Quickdroid",
+               amznRequestId = "1678820014055-3047906886224678661",*/
 
-                applicationName = "com.tivo.cableco.debug",
-                bodyId = "tsn:A8F0F000021749C",
-             /*   encoding = "gzip",
-                userAgent = "vscode-restclient"*/
-            )
-            val t1 = System.currentTimeMillis()
-            var t2 = 0L
-            call.enqueue(object : Callback<List<GuideRow>> {
-                override fun onResponse(
-                    call: Call<List<GuideRow>>,
-                    response: Response<List<GuideRow>>
-                ) {
-                  //  viewModelScope.launch(Dispatchers.IO) {
-                        t2 = System.currentTimeMillis()
-                        Log.d(TAG, "Success Case Time taken in API call (ms) =${t2 - t1}")
-                        Log.d(TAG, "APIRESPONSE==${response.body()}")
-                        val reponseData = response.body()?.toMutableList()
-                        if (reponseData != null) {
-                            // ToDO : Station id maps
-                            val reponseDataSorted =
-                                reponseData.sortedBy { lastCallStationIds.indexOf(it.stationId) }
-                            // split the data for "pagesToLoadPerCall" pages
-                            for (t in 0..pagesToLoadPerCall-1) {
-                                addProgramListForTimeStamp(
-                                    reponseDataSorted,
-                                    lastCallStartTime + (t * MainActivity.timeDurationPerPage)
-                                )
-                                //fillProgramAvailabilityListStatus(lastCallStartTime + (t * ONE_SLOT_IN_SEC))
-                            }
-                        }
-                        val t3 = System.currentTimeMillis()
-                        Log.d(TAG, "Time taken in data manupulation (ms) =${t3 - t2}")
-                        listState = ListState.IDLE
-                 //   }
+            applicationName = "com.tivo.cableco.debug",
+            bodyId = "tsn:A8F0F000021749C",
+            /*   encoding = "gzip",
+               userAgent = "vscode-restclient"*/
+        )
+        val t1 = System.currentTimeMillis()
+        var t2 = 0L
+        call.enqueue(object : Callback<List<GuideRow>> {
+            override fun onResponse(
+                call: Call<List<GuideRow>>,
+                response: Response<List<GuideRow>>
+            ) {
+                //  viewModelScope.launch(Dispatchers.IO) {
+                t2 = System.currentTimeMillis()
+                Log.d(TAG, "Success Case Time taken in API call (ms) =${t2 - t1}")
+                Log.d(TAG, "SHYAK===> APIRESPONSE==${response.body()}")
+                val reponseData = response.body()?.toMutableList()
+                if (reponseData != null) {
+                    // ToDO : Station id maps
+                    val reponseDataSorted =
+                        reponseData.sortedBy { lastCallStationIds.indexOf(it.stationId) }
+                    // split the data for "pagesToLoadPerCall" pages
+                    for (t in 0..pagesToLoadPerCall-1) {
+                        addProgramListForTimeStamp(
+                            reponseDataSorted,
+                            lastCallStartTime + (t * MainActivity.timeDurationPerPage)
+                        )
+                        //fillProgramAvailabilityListStatus(lastCallStartTime + (t * ONE_SLOT_IN_SEC))
+                    }
                 }
+                val t3 = System.currentTimeMillis()
+                Log.d(TAG, "Time taken in data manupulation (ms) =${t3 - t2}")
+                listState = ListState.IDLE
+                //   }
+            }
 
-                override fun onFailure(call: Call<List<GuideRow>>, t: Throwable) {
-                    // Handle error response
-                    t2 = System.currentTimeMillis()
-                    Log.d(TAG, "Failure case Time taken in API call (ms) =${t2-t1}")
-                    Log.d(TAG, "APIRESPONSE==${t.message}")
-                    listState = ListState.IDLE
-                }
-            })
-     //   }
+            override fun onFailure(call: Call<List<GuideRow>>, t: Throwable) {
+                // Handle error response
+                t2 = System.currentTimeMillis()
+                Log.d(TAG, "Failure case Time taken in API call (ms) =${t2-t1}")
+                Log.d(TAG, "APIRESPONSE==${t.message}")
+                listState = ListState.IDLE
+            }
+        })
+        //   }
     }
 
     /*private fun fillProgramAvailabilityListStatus(timeSlot: Long) {
@@ -302,12 +304,12 @@ class GuideViewModel : ViewModel() {
         val endIndex = MainActivity.futurePageCount-1
         for (t in startIndex..endIndex) {
             val timeSlot = startTime+ (t * MainActivity.timeDurationPerPage)
-         //   if (!startTimeToProgramListMap.contains(timeSlot)) {
-                // this timeslot is not in map yet, create one
-            startTimeToProgramListMap.put(timeSlot, dummyProgramsForTimeSlot.toMutableStateList())
+            //   if (!startTimeToProgramListMap.contains(timeSlot)) {
+            // this timeslot is not in map yet, create one
+            startTimeToProgramListMap.put(timeSlot, createDummyProgramList1().toMutableStateList())
             startTimeToProgramListAvailabilityMap.put(timeSlot, BooleanArray(totalChannelCount))
-              //  Log.d(TAG, "createTimeSlotBasedProgramLists for timeslot ${timeSlot}")
-           // }
+            //  Log.d(TAG, "createTimeSlotBasedProgramLists for timeslot ${timeSlot}")
+            // }
         }
     }
 
@@ -315,16 +317,33 @@ class GuideViewModel : ViewModel() {
         dummyProgramsForTimeSlot = ArrayList<ProgramsForTimeSlot>()
         for (i in 1..stationIds.size) {
             // create dummy GuideCell
-            val guideCell = GuideCell(contentId = "Dummy", collectionId = "",
-            contentType = ContentType.episode,
-            duration = 1800,
-            offerId= "",
-            startTime = 0L,
-            title = "Dummy")
+            val guideCell = GuideCell(contentId = "Dummy", collectionId = "Dummy",
+                contentType = ContentType.episode,
+                duration = 1800,
+                offerId= "",
+                startTime = 0L,
+                title = "Dummy")
             val guideCellList = ArrayList<GuideCell>()
             guideCellList.add(guideCell)
             dummyProgramsForTimeSlot.add(ProgramsForTimeSlot(guideCellList))
         }
+    }
+
+    private fun createDummyProgramList1() : ArrayList<ProgramsForTimeSlot>{
+        val dummyProgramsForTimeSlot1 = ArrayList<ProgramsForTimeSlot>()
+        for (i in 1..stationIds.size) {
+            // create dummy GuideCell
+            val guideCell = GuideCell(contentId = "Dummy", collectionId = "Dummy",
+                contentType = ContentType.episode,
+                duration = 1800,
+                offerId= "",
+                startTime = 0L,
+                title = "Dummy")
+            val guideCellList = ArrayList<GuideCell>()
+            guideCellList.add(guideCell)
+            dummyProgramsForTimeSlot1.add(ProgramsForTimeSlot(guideCellList))
+        }
+        return dummyProgramsForTimeSlot1
     }
 
 
@@ -362,7 +381,7 @@ class GuideViewModel : ViewModel() {
                 programListAvailabilityStatus[rowNumberForStationId] = true
             }
         }
-       // printProgramList(lastCallStartTime)
+        // printProgramList(lastCallStartTime)
     }
 
     private fun printProgramList(timeSlot: Long) {

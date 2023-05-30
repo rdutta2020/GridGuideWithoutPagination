@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2023. Xperi Inc.  All rights reserved.
+ */
 package com.example.gridguide
 
 import android.annotation.SuppressLint
@@ -54,13 +57,14 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val TAG = "GuideViewModel"
-        val timeDurationPerSlot = 60*30 // each time slot is of 30 minutes
+        val timeDurationPerSlot = 60 * 30 // each time slot is of 30 minutes
         var futurePageCount = 0
         var pastPageCount = 0
 
         // below values will be initialized in configure() function
         var timeSlotPerPage = 0 // how many time slots we should display per page
-        var timeDurationPerPage = 0 // how much time duration covered in one page (timeDurationPerSlot*timeSlotPerPage)
+        var timeDurationPerPage =
+            0 // how much time duration covered in one page (timeDurationPerSlot*timeSlotPerPage)
         var timeslotsToLoadPerCall = 0 // how many timeslots we need to fill after each response
         fun findStartTimeOfTimeSlot(second: Long): Long {
             val fraction = second / timeDurationPerSlot
@@ -72,10 +76,8 @@ class MainActivity : ComponentActivity() {
     var fixedColumnWidth: Int = 88
     var maxProgramCellWidth: Int = 0
 
-   // val maxColumns = 14 * 24 * 2 // 14 days future data in advance
-   // val minColumns = -3 * 24 * 2 // 3 days previous data in advance
-
-
+    // val maxColumns = 14 * 24 * 2 // 14 days future data in advance
+    // val minColumns = -3 * 24 * 2 // 3 days previous data in advance
 
 
     // TODO: Define them in constant format
@@ -88,7 +90,7 @@ class MainActivity : ComponentActivity() {
     //@Volatile
     lateinit var stateRowY: LazyListState
 
-    lateinit var guideViewModel : GuideViewModel
+    lateinit var guideViewModel: GuideViewModel
 
     // TODO: May not be required
     var previousLastVisibleIndex = 0
@@ -96,17 +98,17 @@ class MainActivity : ComponentActivity() {
     var mLastVisibleIndex = 0
 
     @OptIn(ExperimentalFoundationApi::class)
-   /* val customPageSize = object : PageSize {
-        override fun Density.calculateMainAxisPageSize(
-            availableSpace: Int,
-            pageSpacing: Int
-        ): Int {
-            val visiblePageCount = pageCountOnScreen()
-            return (availableSpace - (visiblePageCount - 1) * pageSpacing) / visiblePageCount
+    /* val customPageSize = object : PageSize {
+         override fun Density.calculateMainAxisPageSize(
+             availableSpace: Int,
+             pageSpacing: Int
+         ): Int {
+             val visiblePageCount = pageCountOnScreen()
+             return (availableSpace - (visiblePageCount - 1) * pageSpacing) / visiblePageCount
 
-             //return (297 * resources.displayMetrics.density).toInt()
-        }
-    }*/
+              //return (297 * resources.displayMetrics.density).toInt()
+         }
+     }*/
 
     @SuppressLint(
         "UnusedMaterial3ScaffoldPaddingParameter",
@@ -164,15 +166,18 @@ class MainActivity : ComponentActivity() {
 
 
             LaunchedEffect(key1 = lastVisibleItemIndex.value) {
-                Log.i("Rupayan1", "firstItemIndex ${firstVisibleItemIndex.value} lastItemIndex ${lastVisibleItemIndex.value} previousLastVisibleIndex ${previousLastVisibleIndex}")
+                Log.i(
+                    "Rupayan1",
+                    "firstItemIndex ${firstVisibleItemIndex.value} lastItemIndex ${lastVisibleItemIndex.value} previousLastVisibleIndex ${previousLastVisibleIndex}"
+                )
                 mFirstVisibleIndex = firstVisibleItemIndex.value!!
                 mLastVisibleIndex = lastVisibleItemIndex.value!!
 
                 var scrollingUp = false
                 lastVisibleItemIndex.value?.let {
-                    if(previousLastVisibleIndex < it){
+                    if (previousLastVisibleIndex < it) {
                         Log.i("Rupayan1", "Scrolling down")
-                    }else{
+                    } else {
                         Log.i("Rupayan1", "Scrolling up")
                         scrollingUp = true
                     }
@@ -180,12 +185,13 @@ class MainActivity : ComponentActivity() {
                 }
                 val currentTimeSlotStartTime =
                     findStartTimeOfTimeSlot(System.currentTimeMillis() / 1000)
-                firstVisibleItemIndex.value?.let {firstIndex ->
+                firstVisibleItemIndex.value?.let { firstIndex ->
                     lastVisibleItemIndex.value?.let { lastIndex ->
                         guideViewModel.fetchGuideDataIfRequired(
                             currentTimeSlotStartTime,
                             firstIndex,
-                            lastIndex)
+                            lastIndex
+                        )
                     }
                 }
             }
@@ -209,12 +215,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-/*
-            Log.i("Rupayan1", "first visible :  ${stateRowY.layoutInfo.visibleItemsInfo.firstOrNull()?.index} " +
-                    "last visible:  ${stateRowY.layoutInfo.visibleItemsInfo.lastOrNull()?.index} " +
-                    "total: ${stateRowY.layoutInfo.totalItemsCount}")
-*/
-           // fixedColumnWidth = 128
+            /*
+                        Log.i("Rupayan1", "first visible :  ${stateRowY.layoutInfo.visibleItemsInfo.firstOrNull()?.index} " +
+                                "last visible:  ${stateRowY.layoutInfo.visibleItemsInfo.lastOrNull()?.index} " +
+                                "total: ${stateRowY.layoutInfo.totalItemsCount}")
+            */
+            // fixedColumnWidth = 128
             maxProgramCellWidth = LocalConfiguration.current.screenWidthDp - fixedColumnWidth
             GridGuideTheme(darkTheme = false) {
                 val lazyListState = rememberLazyListState()
@@ -238,12 +244,15 @@ class MainActivity : ComponentActivity() {
         val futureTimeSlotsCount = 14 * 24 * 2 // 14 days future data in advance
         val pastTimeSlotsCount = 3 * 24 * 2 // 3 days previous data in advance
 
-        futurePageCount = futureTimeSlotsCount/timeSlotPerPage
+        futurePageCount = futureTimeSlotsCount / timeSlotPerPage
         pastPageCount = pastTimeSlotsCount / timeSlotPerPage
 
-        timeDurationPerPage = timeDurationPerSlot*timeSlotPerPage
+        timeDurationPerPage = timeDurationPerSlot * timeSlotPerPage
 
-        Log.i(TAG,"timeSlotPerPage $timeSlotPerPage futurePageCount $futurePageCount pastPageCount $pastPageCount timeDurationPerPage $timeDurationPerPage")
+        Log.i(
+            TAG,
+            "timeSlotPerPage $timeSlotPerPage futurePageCount $futurePageCount pastPageCount $pastPageCount timeDurationPerPage $timeDurationPerPage"
+        )
     }
 
     @Composable
@@ -316,17 +325,21 @@ class MainActivity : ComponentActivity() {
         Column(
             modifier = modifier
                 .fillMaxWidth()
-               // .background(Color.Red)
+            // .background(Color.Red)
         ) {
             HorizontalPager(
                 pageCount = futurePageCount + pastPageCount,
-               // pageSize = customPageSize,
+                // pageSize = customPageSize,
                 state = pagerState,
-              //  modifier = Modifier.background(Color.Green)
+                //  modifier = Modifier.background(Color.Green)
             ) { currentPage ->
-
                 val displayPageNumber = currentPage - pastPageCount
-                //Log.i(TAG, "Drawing pager for page : " + displayPageNumber)
+                Log.i(TAG, "SHYAK===> Drawing pager for page : $displayPageNumber currentPage $currentPage settledPage ${pagerState.settledPage} ")
+                val delta = Math.abs(currentPage - pagerState.settledPage)
+                if(pagerState.settledPage !=0 && delta > 1){
+                    Log.i(TAG, "SHYAK===> will not draw : " + displayPageNumber)
+                    return@HorizontalPager
+                }
                 val currentTimeSlotStartTime =
                     findStartTimeOfTimeSlot(System.currentTimeMillis() / 1000)
                 val currentPageSlotStartTime =
@@ -335,47 +348,67 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier
                         .fillMaxSize()
                         .then(Modifier.padding(end = 2.dp))
-                        //.background(Color.Yellow)
-                )  {
-                    Row(modifier = Modifier
-                        .fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween){
+                    //.background(Color.Yellow)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
 
                         val widthFraction = (1F / timeSlotPerPage.toFloat())
                         Log.i("Rupayan5", "Time slot widthFraction $widthFraction")
-                        val timeSlotWidth = (LocalConfiguration.current.screenWidthDp - fixedColumnWidth) / timeSlotPerPage
-                        for(timeSlotIndex in 0..timeSlotPerPage-1) {
-                            TimeSlotCell(rowHeight, "T ${currentPageSlotStartTime + (timeSlotIndex*timeDurationPerSlot)}+(${displayPageNumber* timeSlotPerPage+timeSlotIndex})+($currentPage)", 0.5F, modifier, timeSlotWidth)
+                        val timeSlotWidth =
+                            (LocalConfiguration.current.screenWidthDp - fixedColumnWidth) / timeSlotPerPage
+                        for (timeSlotIndex in 0..timeSlotPerPage - 1) {
+                            TimeSlotCell(
+                                rowHeight,
+                                "T ${currentPageSlotStartTime + (timeSlotIndex * timeDurationPerSlot)}+(${displayPageNumber * timeSlotPerPage + timeSlotIndex})+($currentPage)",
+                                0.5F,
+                                modifier,
+                                timeSlotWidth
+                            )
                             Spacer(modifier = Modifier.width(2.dp))
-                            }
                         }
-                    val totalProgramCellsWidthForRow = (LocalConfiguration.current.screenWidthDp - fixedColumnWidth)
+                    }
+                    val totalProgramCellsWidthForRow =
+                        (LocalConfiguration.current.screenWidthDp - fixedColumnWidth)
+                    guideViewModel.fetchGuideDataIfRequired(
+                        currentPageSlotStartTime,
+                        mFirstVisibleIndex,
+                        mLastVisibleIndex
+                    )
+                    val programListForTimeSlot: SnapshotStateList<ProgramsForTimeSlot> =
+                        guideViewModel.startTimeToProgramListMap.get(currentPageSlotStartTime)!!
                     LazyColumn(
                         state = stateRowY,
                         userScrollEnabled = false
                     ) {
                         //Log.i("Rupayan", "LazyColumn of program redrawing")
                         //Log.i("SHYAKDAS", "Page ${currentPageSlotStartTime}")
-                       // Log.i(TAG, "Drawing pager for timeslot: " + currentPageSlotStartTime)
+                        // Log.i(TAG, "Drawing pager for timeslot: " + currentPageSlotStartTime)
                         // check if additional data fetching is required for this page and do if required
-                        guideViewModel.fetchGuideDataIfRequired(currentPageSlotStartTime, mFirstVisibleIndex, mLastVisibleIndex)
-                        val programListForTimeSlot: SnapshotStateList<ProgramsForTimeSlot> =
-                            guideViewModel.startTimeToProgramListMap.get(currentPageSlotStartTime)!!
-                        /*Log.i(
-                            "SHYAKDAS",
-                            "Page ${currentPageSlotStartTime} Data size ${programListForTimeSlot.size}"
-                        )*/
+                        Log.i(TAG, "SHYAK===> Before ItemIndexed ==${displayPageNumber} programListForTimeSlot ==${programListForTimeSlot.toList()}")
                         itemsIndexed(programListForTimeSlot) { index, item ->
-                           // Log.i("Rupayan3", "LazyColumn of program drawing row $index")
+                            // Log.i("Rupayan3", "LazyColumn of program drawing row $index")
                             Spacer(modifier = Modifier.height(2.dp))
                             LazyRow(userScrollEnabled = false) {
                                 itemsIndexed(programListForTimeSlot.get(index).programs) { indexRow, itemRow ->
-                                    val durationUnderCurrentPage = if(itemRow.startTime < currentPageSlotStartTime) (itemRow.duration - (currentPageSlotStartTime - itemRow.startTime)) else itemRow.duration
+                                    val durationUnderCurrentPage =
+                                        if (itemRow.startTime < currentPageSlotStartTime) (itemRow.duration - (currentPageSlotStartTime - itemRow.startTime)) else itemRow.duration
                                     val widthFraction =
                                         if (durationUnderCurrentPage.toInt() >= timeDurationPerPage) 1f else (durationUnderCurrentPage.toFloat() / timeDurationPerPage.toFloat())
-                                    Log.i("Rupayan2", "Two programs in  time slot $displayPageNumber row $index column $indexRow widthFraction $widthFraction duration ${itemRow.duration} title ${itemRow.title}")
+                                    Log.i(
+                                        "Rupayan2",
+                                        "Two programs in  time slot $displayPageNumber row $index column $indexRow widthFraction $widthFraction duration ${itemRow.duration} title ${itemRow.title}"
+                                    )
                                     // add spacer based on startTime, we need to check if there is a gap
                                     Spacer(modifier = Modifier.width(2.dp))
-                                    ProgramItemCell(rowHeight, itemRow, widthFraction*totalProgramCellsWidthForRow)
+                                    ProgramItemCell(
+                                        rowHeight,
+                                        itemRow,
+                                        0.33F * totalProgramCellsWidthForRow,
+                                        index.toString()
+                                    )
                                 }
                             }
                         }
@@ -386,7 +419,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun ProgramItemCell(height: Int, cellData: GuideCell, width: Float) {
+    fun ProgramItemCell(height: Int, cellData: GuideCell, width: Float, rowNumber: String) {
         Box(
             modifier = Modifier
                 .width(width.dp)
@@ -402,64 +435,67 @@ class MainActivity : ComponentActivity() {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                  //  .padding(5.dp)
+                //  .padding(5.dp)
             ) {
-                   /* Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                    ) {
-                        if (rowNumber % 4 == 0) {
-                            Text(
-                                text = "New",
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                style = TextStyle(
-                                    fontSize = 14.sp,
-                                    color = Color.White
-                                )
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                        }
-                        Text(
-                            text = "${rowNumber * 400 / 30}m left",
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = TextStyle(
-                                fontSize = 14.sp,
-                                color = Color.White
-                            )
-                        )
-                    }*/
-                    Text(
-                        text = cellData.startTime.toString(),
-                        maxLines = 1,
-                        // overflow = TextOverflow.Ellipsis,
-                        style = TextStyle(
-                            fontSize = 14.sp,
-                            color = Color.White
-                        )
+                /* Row(
+                     modifier = Modifier
+                         .fillMaxWidth()
+                 ) {
+                     if (rowNumber % 4 == 0) {
+                         Text(
+                             text = "New",
+                             maxLines = 1,
+                             overflow = TextOverflow.Ellipsis,
+                             style = TextStyle(
+                                 fontSize = 14.sp,
+                                 color = Color.White
+                             )
+                         )
+                         Spacer(modifier = Modifier.width(10.dp))
+                     }
+                     Text(
+                         text = "${rowNumber * 400 / 30}m left",
+                         maxLines = 1,
+                         overflow = TextOverflow.Ellipsis,
+                         style = TextStyle(
+                             fontSize = 14.sp,
+                             color = Color.White
+                         )
+                     )
+                 }*/
+/*                Text(
+                    text = cellData.startTime.toString(),
+                    maxLines = 1,
+                    // overflow = TextOverflow.Ellipsis,
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color = Color.White
                     )
+                )
                 Spacer(modifier = Modifier.width(2.dp))
-                    Text(
-                        text = cellData.duration.toString(),
-                        maxLines = 1,
-                        // overflow = TextOverflow.Ellipsis,
-                        style = TextStyle(
-                            fontSize = 14.sp,
-                            color = Color.White
-                        )
+                Text(
+                    text = cellData.duration.toString(),
+                    maxLines = 1,
+                    // overflow = TextOverflow.Ellipsis,
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color = Color.White
                     )
-                Spacer(modifier = Modifier.width(2.dp))
-                    Spacer(modifier = Modifier.width(2.dp))
+                )*/
+//                Spacer(modifier = Modifier.width(2.dp))
+//                Spacer(modifier = Modifier.width(2.dp))
+               // if (cellData.contentId != "") {
                     Text(
+                       // text = rowNumber + "-" +cellData.contentId,
                         text = cellData.contentId,
                         maxLines = 1,
-                       // overflow = TextOverflow.Ellipsis,
+                        // overflow = TextOverflow.Ellipsis,
                         style = TextStyle(
                             fontSize = 14.sp,
                             color = Color.White
                         )
                     )
+             //   }
             }
         }
     }
@@ -519,9 +555,9 @@ class MainActivity : ComponentActivity() {
             Log.i("Rupayan", "LazyColumn of channel redrawing")
             itemsIndexed(guideViewModel.stationIds) { index, item ->
                 // Log.d("TAG","DrawaingRowNumber==$index")
-               // Log.i("Rupayan", "LazyColumn of channel drawing row $index")
+                // Log.i("Rupayan", "LazyColumn of channel drawing row $index")
                 Spacer(modifier = Modifier.height(2.dp))
-                ChannelItemCell(rowHeight, item)
+                ChannelItemCell(rowHeight, index.toString())
             }
         }
     }
@@ -579,34 +615,33 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun getIconDrawable(rowNumber: Int): Int=
-        when(rowNumber%10){
-            1->R.drawable.ic_1
-            2->R.drawable.ic_2
-            3->R.drawable.ic_3
-            4->R.drawable.ic_4
-            5->R.drawable.ic_5
-            6->R.drawable.ic_6
-            7->R.drawable.ic_7
-            8->R.drawable.ic_8
-            9->R.drawable.ic_9
-            else->R.drawable.ic_10
+    private fun getIconDrawable(rowNumber: Int): Int =
+        when (rowNumber % 10) {
+            1 -> R.drawable.ic_1
+            2 -> R.drawable.ic_2
+            3 -> R.drawable.ic_3
+            4 -> R.drawable.ic_4
+            5 -> R.drawable.ic_5
+            6 -> R.drawable.ic_6
+            7 -> R.drawable.ic_7
+            8 -> R.drawable.ic_8
+            9 -> R.drawable.ic_9
+            else -> R.drawable.ic_10
         }
 
-    private fun getProgramName(rowNumber: Int, timeslotNumber: Int): String=
-        when((rowNumber+1)*(Math.abs(timeslotNumber)+1) %10){
-            1->"Golden State Warrior"
-            2->"La Reina Del Sur"
-            3->"Mi Camino Es Amarte"
-            4->"Roads War"
-            5->"DateLine"
-            6->"Nature Cat"
-            7->"Donkey Hodie"
-            8->"In the Heart of the Night"
-            9->"Moon 101"
-            else->"NBA Today"
+    private fun getProgramName(rowNumber: Int, timeslotNumber: Int): String =
+        when ((rowNumber + 1) * (Math.abs(timeslotNumber) + 1) % 10) {
+            1 -> "Golden State Warrior"
+            2 -> "La Reina Del Sur"
+            3 -> "Mi Camino Es Amarte"
+            4 -> "Roads War"
+            5 -> "DateLine"
+            6 -> "Nature Cat"
+            7 -> "Donkey Hodie"
+            8 -> "In the Heart of the Night"
+            9 -> "Moon 101"
+            else -> "NBA Today"
         }
-
 
 
     private var channelProgramData: ArrayList<ChannelProgramData> = ArrayList()
@@ -617,24 +652,24 @@ class MainActivity : ComponentActivity() {
         //loadLargeData()
     }
 
-   /* private fun loadLargeData() {
-        for (row in 0..maxRows - 1) {
-            val name = "C$row"
-            val programList: ArrayList<CellItemData> = ArrayList()
-            // for (col in minColumns..maxColumns) {
-            // for (col in 0..1) { // making less as this is not used now
-            //  if (row % 4 == 0 && col % 2 != 0) {
-            //      programList.add(CellItemData(String.format("P-%d-%d", row, col), 15))
-            // } else {
-            //   programList.add(CellItemData(String.format("P-%d-%d", row, col), 30))
-            //  }
-            //  }
-            channelProgramData.add(ChannelProgramData(name, programList))
-        }
-        for (t in minColumns..maxColumns) {
-             timeslots.add(CellItemData("T$t", 30))
+    /* private fun loadLargeData() {
+         for (row in 0..maxRows - 1) {
+             val name = "C$row"
+             val programList: ArrayList<CellItemData> = ArrayList()
+             // for (col in minColumns..maxColumns) {
+             // for (col in 0..1) { // making less as this is not used now
+             //  if (row % 4 == 0 && col % 2 != 0) {
+             //      programList.add(CellItemData(String.format("P-%d-%d", row, col), 15))
+             // } else {
+             //   programList.add(CellItemData(String.format("P-%d-%d", row, col), 30))
+             //  }
+             //  }
+             channelProgramData.add(ChannelProgramData(name, programList))
          }
-    }*/
+         for (t in minColumns..maxColumns) {
+              timeslots.add(CellItemData("T$t", 30))
+          }
+     }*/
 
     private fun isPhoneUi(): Boolean {
         return applicationContext.resources.getBoolean(R.bool.is_phone)
