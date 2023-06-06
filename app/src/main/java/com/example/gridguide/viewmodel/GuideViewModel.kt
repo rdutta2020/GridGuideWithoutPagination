@@ -3,23 +3,20 @@ package com.example.gridguide.viewmodel
 import android.os.Process
 import android.util.Log
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.gridguide.ListState
 import com.example.gridguide.MainActivity
+import com.example.gridguide.MainActivity.Companion.timeDurationPerPage
+import com.example.gridguide.MainActivity.Companion.timeDurationPerSlot
 import com.example.gridguide.ProgramsForTimeSlot
 import com.example.gridguide.model.ContentType
 import com.example.gridguide.model.GuideCell
 import com.example.gridguide.model.GuideRow
 import com.example.gridguide.network.RetrofitInstance
-import com.squareup.moshi.Json
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -82,20 +79,18 @@ class GuideViewModel : ViewModel() {
 
     val startTimeToProgramListMap = mutableMapOf<Long, SnapshotStateList<ProgramsForTimeSlot>>()
     val startTimeToProgramListAvailabilityMap = mutableMapOf<Long, BooleanArray>()
-    var lastCallStartTime = 0L
+    //var lastCallStartTime = 0L
     lateinit var lastCallStationIds: List<String>
     var listState by mutableStateOf(ListState.IDLE)
     // var lastGuideCallStartStationIdIndex = 0
     // var lastGuideCallEndStationIdIndex = 0
     val totalChannelCount = stationIds.size
-    lateinit var dummyProgramsForTimeSlot : ArrayList<ProgramsForTimeSlot>
 
     // below parameters will be initialized in configure()
     var pagesToLoadPerCall = 0 ; // how many pages are loaded per call
 
     init {
         configure()
-        createDummyProgramList()
         val currentTime = MainActivity.findStartTimeOfTimeSlot(System.currentTimeMillis() / 1000)
         createTimeSlotBasedProgramLists(currentTime)
         //fetchGuideDataIfRequired(currentTime, 0, 0)
@@ -155,7 +150,7 @@ class GuideViewModel : ViewModel() {
         // TODO : Must fix
         val startTime = timeSlot - 3*DURATION_PER_SLOT
         val endTime = timeSlot + 3*DURATION_PER_SLOT
-        lastCallStartTime = startTime
+        //lastCallStartTime = startTime
         guideCallEndStationIdIndex = Math.min(guideCallStartStationIdIndex+NUMBER_OF_STATIONS_PER_CALL,totalChannelCount)-1
         // 1st call with current channel list visible
         Log.i(TAG,"guideRows call station list start index ${guideCallStartStationIdIndex} end index ${guideCallEndStationIdIndex} timeSlot $timeSlot")
@@ -261,7 +256,7 @@ class GuideViewModel : ViewModel() {
                     for (t in 0..pagesToLoadPerCall-1) {
                         addProgramListForTimeStamp(
                             reponseDataSorted,
-                            lastCallStartTime + (t * MainActivity.timeDurationPerPage)
+                            startTime + (t * MainActivity.timeDurationPerPage)
                         )
                         //fillProgramAvailabilityListStatus(lastCallStartTime + (t * ONE_SLOT_IN_SEC))
                     }
@@ -306,44 +301,28 @@ class GuideViewModel : ViewModel() {
             val timeSlot = startTime+ (t * MainActivity.timeDurationPerPage)
             //   if (!startTimeToProgramListMap.contains(timeSlot)) {
             // this timeslot is not in map yet, create one
-            startTimeToProgramListMap.put(timeSlot, createDummyProgramList1().toMutableStateList())
+            startTimeToProgramListMap.put(timeSlot, createDummyProgramList(timeSlot).toMutableStateList())
             startTimeToProgramListAvailabilityMap.put(timeSlot, BooleanArray(totalChannelCount))
             //  Log.d(TAG, "createTimeSlotBasedProgramLists for timeslot ${timeSlot}")
             // }
         }
     }
 
-    private fun createDummyProgramList(){
-        dummyProgramsForTimeSlot = ArrayList<ProgramsForTimeSlot>()
+    private fun createDummyProgramList(timeSlot: Long): ArrayList<ProgramsForTimeSlot>{
+        val dummyProgramsForTimeSlot = ArrayList<ProgramsForTimeSlot>()
         for (i in 1..stationIds.size) {
             // create dummy GuideCell
-            val guideCell = GuideCell(contentId = "Dummy", collectionId = "Dummy",
+            /*val guideCell = GuideCell(contentId = "Dummy", collectionId = "Dummy",
                 contentType = ContentType.episode,
                 duration = 1800,
                 offerId= "",
                 startTime = 0L,
-                title = "Dummy")
+                title = "Dummy")*/
             val guideCellList = ArrayList<GuideCell>()
-            guideCellList.add(guideCell)
+            guideCellList.add(createEmptyGuideCell(contentId = "", duration = timeDurationPerPage, startTime = timeSlot))
             dummyProgramsForTimeSlot.add(ProgramsForTimeSlot(guideCellList))
         }
-    }
-
-    private fun createDummyProgramList1() : ArrayList<ProgramsForTimeSlot>{
-        val dummyProgramsForTimeSlot1 = ArrayList<ProgramsForTimeSlot>()
-        for (i in 1..stationIds.size) {
-            // create dummy GuideCell
-            val guideCell = GuideCell(contentId = "Dummy", collectionId = "Dummy",
-                contentType = ContentType.episode,
-                duration = 1800,
-                offerId= "",
-                startTime = 0L,
-                title = "Dummy")
-            val guideCellList = ArrayList<GuideCell>()
-            guideCellList.add(guideCell)
-            dummyProgramsForTimeSlot1.add(ProgramsForTimeSlot(guideCellList))
-        }
-        return dummyProgramsForTimeSlot1
+        return dummyProgramsForTimeSlot
     }
 
 
@@ -372,16 +351,81 @@ class GuideViewModel : ViewModel() {
                     cells.add(cell)
                 }
             }
+            val cellsForTimeSlot = insertEmptyProgramCells(timeSlot, timeSlot + MainActivity.timeDurationPerPage, cells.sortedWith(compareBy { it.startTime }))
+
             // TODO :: Need to know if a station does not have guide cells data then how to make programListAvailabilityStatus true
             // TODO:: Can we avoid using programListAvailabilityStatus alltogether
             val rowNumberForStationId = stationIds.indexOf(guideRows.get(rowNumber).stationId)
             if(rowNumberForStationId >=0 && rowNumberForStationId < stationIds.size) {
                 Log.i(TAG, "addProgramListForTimeStamp  rowNumberForStationId $rowNumberForStationId")
-                programList.set(rowNumberForStationId, ProgramsForTimeSlot(cells))
+                programList.set(rowNumberForStationId, ProgramsForTimeSlot(cellsForTimeSlot))
                 programListAvailabilityStatus[rowNumberForStationId] = true
             }
         }
         // printProgramList(lastCallStartTime)
+    }
+
+    private fun insertEmptyProgramCells(pageStartTime: Long, pageEndTime: Long, guideCells: List<GuideCell>): List<GuideCell> {
+        val cellsForTimeSlot = ArrayList<GuideCell>()
+        var lastProgramEndTime = pageStartTime
+        for(cell in guideCells){
+            // we need to check if we need to add a empty cell before
+            if(cell.startTime-lastProgramEndTime > 0){
+                val emptyCellDuration = cell.startTime-lastProgramEndTime
+                cellsForTimeSlot.add(createEmptyGuideCell(startTime = lastProgramEndTime, duration = emptyCellDuration.toInt()))
+                lastProgramEndTime += emptyCellDuration
+                Log.i("Rupayan5", "Extra Program cell added1")
+            }
+            // now we add the cell which has come in response
+            cellsForTimeSlot.add(cell)
+            lastProgramEndTime = Math.min(
+                cell.startTime + cell.duration,
+                pageEndTime
+            )
+        }
+        // we need to check if we need to add a empty cell at the end
+        if(lastProgramEndTime < pageEndTime){
+            val emptyCellDuration = pageEndTime - lastProgramEndTime
+            cellsForTimeSlot.add(createEmptyGuideCell(duration = emptyCellDuration.toInt()))
+            lastProgramEndTime += emptyCellDuration
+            Log.i("Rupayan5", "Extra Program cell added2")
+        }
+        // print if extra cells are added
+        if(guideCells.size != cellsForTimeSlot.size){
+            // extra cells are added to fill gap
+            Log.i("Rupayan5", "Extra Program cells are added in pageStartTime $pageStartTime API result Size ${guideCells.size} after addition size ${cellsForTimeSlot.size}")
+            Log.i("Rupayan5", "Extra Program cells are added in pageStartTime $pageStartTime printing API data")
+            printGuideCells(guideCells)
+            Log.i("Rupayan5", "Extra Program cells are added in pageStartTime $pageStartTime after addition data")
+            printGuideCells(cellsForTimeSlot)
+        }
+        return cellsForTimeSlot
+    }
+
+    private fun printGuideCells(cellsForTimeSlot: List<GuideCell>) {
+        for (cell in cellsForTimeSlot){
+            Log.i("Rupayan5", "Content-id ${cell.contentId} start time ${cell.startTime} duration ${cell.duration}")
+        }
+    }
+
+    private fun createEmptyGuideCell(
+        contentId: String = "",
+        collectionId: String = "",
+        contentType: ContentType = ContentType.episode,
+        duration: Int = 0,
+        offerId: String = "",
+        startTime: Long = 0L,
+        title: String = ""
+    ): GuideCell {
+        return GuideCell(
+            contentId = contentId,
+            collectionId = collectionId,
+            contentType = contentType,
+            duration = duration,
+            offerId = offerId,
+            startTime = startTime,
+            title = title
+        )
     }
 
     private fun printProgramList(timeSlot: Long) {
@@ -389,7 +433,7 @@ class GuideViewModel : ViewModel() {
         val programList : SnapshotStateList<ProgramsForTimeSlot> = startTimeToProgramListMap.get(timeSlot)!!
         for (rowNumber in 0..programList.size-1){
             Log.i(TAG, "Printing for stationId ${lastCallStationIds.get(rowNumber)}")
-            val programListForStation : ArrayList<GuideCell> = programList.get(rowNumber).programs
+            val programListForStation  = programList.get(rowNumber).programs
             for (cellNumber in 0..programListForStation.size-1){
                 Log.i(TAG, "Content Id ${programListForStation.get(cellNumber).contentId}")
             }
